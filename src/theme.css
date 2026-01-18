@@ -1,0 +1,51 @@
+body {
+  background: #f5f5f7;
+  color: #222;
+}
+
+.card,
+.list-group-item,
+.form-control,
+.input-group,
+.btn,
+.navbar,
+.dropdown-menu {
+  background-color: #fff !important;
+  color: #222 !important;
+}
+
+.card-header,
+.list-group-item.active,
+.btn-primary,
+.btn-outline-primary,
+.badge-info {
+  background-color: #ff8800 !important;
+  color: #fff !important;
+  border-color: #ff8800 !important;
+}
+
+.btn-outline-primary {
+  color: #ff8800 !important;
+  background: #fff !important;
+  border-color: #ff8800 !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  background: #ff8800 !important;
+  color: #fff !important;
+}
+
+.badge-info {
+  background-color: #ff8800 !important;
+  color: #fff !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: #ececec;
+}
+::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 4px;
+}

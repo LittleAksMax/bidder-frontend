@@ -1,0 +1,5 @@
+.policy-select-item:hover,
+.policy-select-item:focus {
+  background-color: #ffe5cc !important;
+  color: #222 !important;
+}

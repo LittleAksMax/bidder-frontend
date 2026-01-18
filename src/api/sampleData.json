@@ -1,0 +1,140 @@
+{
+  "campaigns": [
+    {
+      "id": 1,
+      "name": "Campaign 1",
+      "policy": { "id": 1, "name": "Policy A" },
+      "adgroups": [
+        {
+          "id": 101,
+          "name": "Adgroup A",
+          "products": [
+            { "id": 1001, "sku": "SKU-X", "name": "Product X" },
+            { "id": 1002, "sku": "SKU-Y", "name": "Product Y" }
+          ]
+        },
+        {
+          "id": 102,
+          "name": "Adgroup B",
+          "products": [{ "id": 1003, "sku": "SKU-Z", "name": "Product Z" }]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Campaign 2",
+      "policy": { "id": 2, "name": "Policy B" },
+      "adgroups": [
+        {
+          "id": 201,
+          "name": "Adgroup C",
+          "products": [{ "id": 2001, "sku": "SKU-A", "name": "Product A" }]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Campaign 3",
+      "policy": { "id": 3, "name": "Policy C" },
+      "adgroups": [
+        {
+          "id": 301,
+          "name": "Adgroup D",
+          "products": [
+            { "id": 3001, "sku": "SKU-B", "name": "Product B" },
+            { "id": 3002, "sku": "SKU-C", "name": "Product C" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Campaign 4",
+      "policy": { "id": 4, "name": "Policy D" },
+      "adgroups": [
+        {
+          "id": 401,
+          "name": "Adgroup E",
+          "products": [
+            { "id": 4001, "sku": "SKU-D", "name": "Product D" },
+            { "id": 4002, "sku": "SKU-E", "name": "Product E" },
+            { "id": 4003, "sku": "SKU-F", "name": "Product F" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Campaign 5",
+      "policy": { "id": 5, "name": "Policy E" },
+      "adgroups": [
+        {
+          "id": 501,
+          "name": "Adgroup F",
+          "products": [
+            { "id": 5001, "sku": "SKU-G", "name": "Product G" },
+            { "id": 5002, "sku": "SKU-H", "name": "Product H" },
+            { "id": 5003, "sku": "SKU-I", "name": "Product I" },
+            { "id": 5004, "sku": "SKU-J", "name": "Product J" }
+          ]
+        }
+      ]
+    }
+  ],
+  "policies": [
+    { "id": 1, "name": "Policy A" },
+    { "id": 2, "name": "Policy B" },
+    { "id": 3, "name": "Policy C" },
+    { "id": 4, "name": "Policy D" },
+    { "id": 5, "name": "Policy E" },
+    { "id": 6, "name": "Policy F" },
+    { "id": 7, "name": "Policy G" },
+    { "id": 8, "name": "Policy H" },
+    { "id": 9, "name": "Policy I" },
+    { "id": 10, "name": "Policy J" }
+  ],
+  "changeLogs": [
+    {
+      "id": 1,
+      "product_id": 1001,
+      "old_price": 10.0,
+      "new_price": 12.0,
+      "timestamp": "2025-12-20T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "product_id": 1002,
+      "old_price": 15.0,
+      "new_price": 14.0,
+      "timestamp": "2025-12-25T12:00:00Z"
+    },
+    {
+      "id": 3,
+      "product_id": 1003,
+      "old_price": 20.0,
+      "new_price": 20.0,
+      "timestamp": "2026-01-01T09:00:00Z"
+    },
+    {
+      "id": 4,
+      "product_id": 2001,
+      "old_price": 8.0,
+      "new_price": 9.5,
+      "timestamp": "2026-01-10T15:00:00Z"
+    },
+    {
+      "id": 5,
+      "product_id": 3001,
+      "old_price": 11.0,
+      "new_price": 10.0,
+      "timestamp": "2026-01-15T18:00:00Z"
+    },
+    {
+      "id": 6,
+      "product_id": 4001,
+      "old_price": 7.0,
+      "new_price": 7.0,
+      "timestamp": "2026-01-17T20:00:00Z"
+    }
+  ]
+}
