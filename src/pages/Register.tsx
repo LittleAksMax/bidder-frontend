@@ -1,16 +1,20 @@
 import { FC, useState } from 'react';
-import Page from './Page';
+import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/ApiClient';
 import AuthForm from '../components/auth/AuthForm';
 import CenteredContainer from '../components/CenteredContainer';
+import AuthRedirect from '../components/auth/AuthRedirect';
 
 const Register: FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // handle register logic
+    apiClient.setAuthenticated(true);
+    navigate('/');
   };
 
   return (
@@ -22,6 +26,7 @@ const Register: FC = () => {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete="off"
           required
         />
         <input
@@ -30,6 +35,7 @@ const Register: FC = () => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
           required
         />
         <input
@@ -38,8 +44,10 @@ const Register: FC = () => {
           placeholder="Confirm Password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="off"
           required
         />
+        <AuthRedirect to="/login" />
       </AuthForm>
     </CenteredContainer>
   );

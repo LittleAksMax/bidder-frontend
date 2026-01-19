@@ -42,7 +42,7 @@ class ApiClient {
   async createPolicy(policy: { name: string }): Promise<Policy> {
     console.log('[apiClient] createPolicy called with policy:', policy);
     // This only returns a new policy object, does not persist to JSON
-    return { id: Math.floor(Math.random() * 10000), ...policy };
+    return { id: Math.floor(Math.random() * 10000), type: 'Range Update Rules', ...policy };
   }
 
   async getChangeLogs(query: ChangeLogQuery): Promise<ChangeLogResult> {

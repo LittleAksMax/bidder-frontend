@@ -1,5 +1,5 @@
 import { FC, ReactNode } from 'react';
-import { Card, Button, Form, InputGroup } from 'react-bootstrap';
+import { Card, Button, Form } from 'react-bootstrap';
 
 interface AuthFormProps {
   title: string;

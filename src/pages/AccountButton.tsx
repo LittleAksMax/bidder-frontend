@@ -1,11 +1,13 @@
 import { FC } from 'react';
 import { Dropdown } from 'react-bootstrap';
+import { useLogout } from '../components/auth/useLogout';
 
 interface AccountButtonProps {
   show: boolean;
 }
 
 const AccountButton: FC<AccountButtonProps> = ({ show }) => {
+  const logout = useLogout();
   if (!show) return null;
   return (
     <Dropdown align="end">
@@ -13,8 +15,7 @@ const AccountButton: FC<AccountButtonProps> = ({ show }) => {
         <span className="bi bi-person" /> My Account
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        <Dropdown.Item href="/login">Login</Dropdown.Item>
-        <Dropdown.Item href="/register">Register</Dropdown.Item>
+        <Dropdown.Item onClick={logout}>Log out</Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>
   );
