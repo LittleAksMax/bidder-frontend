@@ -1,6 +1,7 @@
 import { FC, ReactNode } from 'react';
 import { Container } from 'react-bootstrap';
 import SettingsMenu from './SettingsMenu';
+import AccountButton from './AccountButton';
 
 interface PageProps {
   children: ReactNode;
@@ -13,7 +14,19 @@ const Page: FC<PageProps> = ({ children, showSettings = false }) => (
     className="vh-100 d-flex flex-column justify-content-center align-items-center p-0 position-relative"
     style={{ background: '#f8f9fa' }}
   >
-    <SettingsMenu show={showSettings} />
+    <div
+      style={{
+        position: 'absolute',
+        top: 12,
+        right: 24,
+        zIndex: 10,
+        display: 'flex',
+        gap: '0.5rem',
+      }}
+    >
+      <SettingsMenu show={showSettings} />
+      <AccountButton show={showSettings} />
+    </div>
     <div
       style={{
         width: '90%',
