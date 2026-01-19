@@ -82,16 +82,16 @@
     }
   ],
   "policies": [
-    { "id": 1, "name": "Policy A" },
-    { "id": 2, "name": "Policy B" },
-    { "id": 3, "name": "Policy C" },
-    { "id": 4, "name": "Policy D" },
-    { "id": 5, "name": "Policy E" },
-    { "id": 6, "name": "Policy F" },
-    { "id": 7, "name": "Policy G" },
-    { "id": 8, "name": "Policy H" },
-    { "id": 9, "name": "Policy I" },
-    { "id": 10, "name": "Policy J" }
+    { "id": 1, "name": "Policy A", "type": "range" },
+    { "id": 2, "name": "Policy B", "type": "range" },
+    { "id": 3, "name": "Policy C", "type": "range" },
+    { "id": 4, "name": "Policy D", "type": "range" },
+    { "id": 5, "name": "Policy E", "type": "range" },
+    { "id": 6, "name": "Policy F", "type": "range" },
+    { "id": 7, "name": "Policy G", "type": "range" },
+    { "id": 8, "name": "Policy H", "type": "range" },
+    { "id": 9, "name": "Policy I", "type": "range" },
+    { "id": 10, "name": "Policy J", "type": "range" }
   ],
   "changeLogs": [
     {

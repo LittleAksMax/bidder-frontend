@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import Page from './Page';
-import AuthForm from './AuthForm';
+import AuthForm from '../components/auth/AuthForm';
 import CenteredContainer from '../components/CenteredContainer';
 
 const Login: FC = () => {

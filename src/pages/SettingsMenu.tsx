@@ -8,7 +8,7 @@ interface SettingsMenuProps {
 const SettingsMenu: FC<SettingsMenuProps> = ({ show }) => {
   if (!show) return null;
   return (
-    <div style={{ position: 'absolute', top: 16, right: 32, zIndex: 10 }}>
+    <div style={{ position: 'absolute', top: 12, right: 24, zIndex: 10 }}>
       <Dropdown align="end">
         <Dropdown.Toggle variant="secondary" id="settings-dropdown" size="sm">
           <span className="bi bi-gear" /> Settings

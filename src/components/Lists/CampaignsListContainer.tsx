@@ -2,12 +2,10 @@ import { FC } from 'react';
 import { Card } from 'react-bootstrap';
 import CampaignsList from './CampaignsList';
 
-interface CampaignsListContainerProps {
-  listHeight?: string;
-}
+interface CampaignsListContainerProps {}
 
-const CampaignsListContainer: FC<CampaignsListContainerProps> = ({ listHeight }) => (
-  <Card style={{ marginTop: '1.5rem', marginBottom: '1.5rem', height: '100%', width: '100%' }}>
+const CampaignsListContainer: FC<CampaignsListContainerProps> = () => (
+  <Card style={{ height: '100%', width: '100%' }}>
     <Card.Header className="bg-primary text-white">
       <h2 className="mb-0">Campaigns</h2>
     </Card.Header>

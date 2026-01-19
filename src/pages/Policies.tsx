@@ -1,40 +1,40 @@
 import { FC, useState, useEffect } from 'react';
-import { Card, ListGroup, FormControl, Button } from 'react-bootstrap';
+import { Card, Button } from 'react-bootstrap';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
+import { RULE_TYPES } from '../api/types';
 import { useNavigate } from 'react-router-dom';
-import { EditIcon, CreateIcon, DeleteIcon } from '../components/icons/Icon';
+import CreateButton from '../components/buttons/CreateButton';
+import EditButton from '../components/buttons/EditButton';
+import DeleteButton from '../components/buttons/DeleteButton';
+
+import CreatePolicyModal from '../components/Policies/CreatePolicyModal';
+import EditPolicyModal from '../components/Policies/EditPolicyModal';
+import PoliciesList from '../components/Lists/PoliciesList';
+import './Policies.css';
 
 const Policies: FC = () => {
   const [policies, setPolicies] = useState<any[]>([]);
-  const [newPolicyName, setNewPolicyName] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editPolicyId, setEditPolicyId] = useState<number | null>(null);
   const navigate = useNavigate();
-
   useEffect(() => {
     apiClient.getPolicies().then(setPolicies);
   }, []);
 
-  const handleCreatePolicy = async () => {
-    if (!newPolicyName) return;
-    await apiClient.createPolicy({ name: newPolicyName });
-    setNewPolicyName('');
-    const updated = await apiClient.getPolicies();
-    setPolicies(updated);
-  };
+  // Creation logic will be handled in the modal in the future
 
   const handleDelete = async (id: number) => {
     // TODO: Implement delete logic
     setPolicies((prev) => prev.filter((p) => p.id !== id));
   };
   const handleUpdate = (id: number) => {
-    // TODO: Implement update logic (show update form or modal)
-    alert('Update policy ' + id);
+    setEditPolicyId(id);
   };
 
   return (
     <Page showSettings>
-      <div className="w-100 d-flex justify-content-end mb-3">
+      <div className="w-100 d-flex justify-content-end mb-3" style={{ gap: '0.5rem' }}>
         <Button variant="outline-primary" size="sm" onClick={() => navigate('/')} className="me-2">
           Back To Home
         </Button>
@@ -50,73 +50,25 @@ const Policies: FC = () => {
         <Card.Header className="bg-success text-white d-flex align-items-center">
           <h2 className="mb-0">Policies</h2>
         </Card.Header>
-        <Card.Body className="p-0 flex-grow-1 d-flex flex-column">
+        <Card.Body className="p-0 flex-grow-1 d-flex flex-column position-relative">
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            <ListGroup className="mb-3">
-              {policies.map((policy) => (
-                <ListGroup.Item
-                  key={policy.id}
-                  className="d-flex align-items-center justify-content-between"
-                >
-                  <span>{policy.name}</span>
-                  <span>
-                    <Button
-                      variant="outline-warning"
-                      size="sm"
-                      className="ms-2"
-                      onClick={() => handleUpdate(policy.id)}
-                    >
-                      <EditIcon size={18} />
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      className="ms-2"
-                      onClick={() => handleDelete(policy.id)}
-                    >
-                      <DeleteIcon size={18} />
-                    </Button>
-                  </span>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
+            <PoliciesList policies={policies} onEdit={handleUpdate} onDelete={handleDelete} />
           </div>
-          <div className="p-3 d-flex align-items-center">
-            <Button
-              variant="primary"
-              onClick={() => setShowAddForm((v) => !v)}
-              style={{
-                borderRadius: '50%',
-                width: 36,
-                height: 36,
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CreateIcon size={22} />
-            </Button>
-            {showAddForm && (
-              <form
-                className="ms-3 flex-grow-1 d-flex align-items-center"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleCreatePolicy();
-                }}
-              >
-                <FormControl
-                  type="text"
-                  value={newPolicyName}
-                  onChange={(e) => setNewPolicyName(e.target.value)}
-                  placeholder="New policy name"
-                  className="me-2"
-                />
-                <Button type="submit" variant="success">
-                  Add
-                </Button>
-              </form>
-            )}
+          <EditPolicyModal show={editPolicyId !== null} onClose={() => setEditPolicyId(null)} />
+          <div
+            className="policies-taskbar d-flex justify-content-end align-items-center px-3 py-2"
+            style={{
+              borderTop: '1px solid #e0e0e0',
+              background: '#f8f9fa',
+              position: 'sticky',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 2,
+            }}
+          >
+            <CreateButton onClick={() => setShowCreateModal(true)} />
+            <CreatePolicyModal show={showCreateModal} onClose={() => setShowCreateModal(false)} />
           </div>
         </Card.Body>
       </Card>

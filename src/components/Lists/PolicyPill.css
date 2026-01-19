@@ -1,0 +1,9 @@
+.policy-pill-green {
+  background: #198754;
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95em;
+  display: inline-block;
+  padding: 2px 10px;
+}

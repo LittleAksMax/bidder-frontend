@@ -4,7 +4,7 @@ import Home from './pages/Home';
 import Policies from './pages/Policies';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import FormPlaceholder from './components/CampaignsList/FormPlaceholder';
+import FormPlaceholder from './components/Lists/FormPlaceholder';
 import NotFound from './pages/NotFound';
 
 const App: FC = () => {

@@ -13,16 +13,19 @@ class ApiClient {
   private _isAuthenticated = false;
 
   async getCampaigns(): Promise<Campaign[]> {
+    console.log('[apiClient] getCampaigns called');
     return sampleData.campaigns as Campaign[];
   }
 
   async getAdgroups(campaignId: number): Promise<Adgroup[]> {
+    console.log('[apiClient] getAdgroups called with campaignId:', campaignId);
     const campaigns = await this.getCampaigns();
     const campaign = campaigns.find((c) => c.id === campaignId);
     return campaign ? campaign.adgroups : [];
   }
 
   async getProducts(adgroupId: number): Promise<Product[]> {
+    console.log('[apiClient] getProducts called with adgroupId:', adgroupId);
     const campaigns = await this.getCampaigns();
     for (const campaign of campaigns) {
       const adgroup = campaign.adgroups.find((a) => a.id === adgroupId);
@@ -32,15 +35,18 @@ class ApiClient {
   }
 
   async getPolicies(): Promise<Policy[]> {
+    console.log('[apiClient] getPolicies called');
     return sampleData.policies as Policy[];
   }
 
   async createPolicy(policy: { name: string }): Promise<Policy> {
+    console.log('[apiClient] createPolicy called with policy:', policy);
     // This only returns a new policy object, does not persist to JSON
     return { id: Math.floor(Math.random() * 10000), ...policy };
   }
 
   async getChangeLogs(query: ChangeLogQuery): Promise<ChangeLogResult> {
+    console.log('[apiClient] getChangeLogs called with query:', query);
     const { startTime, endTime, page = 1, pageSize = 5 } = query;
     const all = (sampleData.changeLogs as ChangeLogEntry[]).filter((e) => {
       return e.timestamp >= startTime && e.timestamp <= endTime;

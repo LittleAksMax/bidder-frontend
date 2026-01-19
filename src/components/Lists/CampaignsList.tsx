@@ -4,9 +4,12 @@ import { ListGroup, Button } from 'react-bootstrap';
 import { Campaign } from '../../api/types';
 import AdgroupsList from './AdgroupsList';
 import ExpandButton from './ExpandButton';
-import PolicyPill from '../PolicyPill';
+import PolicyPill from '../Policies/PolicyPill';
 import AssignPolicyModal from './AssignPolicyModal';
-import { CreateIcon, EditIcon, DeleteIcon } from '../icons/Icon';
+import CreateButton from '../buttons/CreateButton';
+import EditButton from '../buttons/EditButton';
+import DeleteButton from '../buttons/DeleteButton';
+import './CampaignsList.css';
 import ChangeLogModal from './ChangeLogModal';
 import CampaignsListItem from './CampaignsListItem';
 import CampaignsListRowSections from './CampaignsListRowSections';
@@ -72,73 +75,26 @@ const CampaignsList: FC = () => {
             }
             policySection={
               campaign.policy ? (
-                <PolicyPill policy={campaign.policy} fontSize={POLICY_PILL_FONT_SIZE} />
+                <PolicyPill policyName={campaign.policy.name} fontSize={POLICY_PILL_FONT_SIZE} />
               ) : null
             }
             buttonsSection={
               campaign.policy ? (
                 <>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => handleRemovePolicy(campaign.id)}
-                    title="Remove Policy"
-                    style={{
-                      transition: 'background 0.2s',
-                      boxShadow: 'none',
-                      padding: '0.1rem 0.3rem',
-                      minWidth: 0,
-                      minHeight: 0,
-                      lineHeight: 1,
-                    }}
-                  >
-                    <DeleteIcon size={20} />
-                  </Button>
-                  <Button
-                    variant="outline-warning"
-                    size="sm"
-                    onClick={() => setShowAssignModal(campaign.id)}
-                    title="Edit Policy"
-                    style={{
-                      transition: 'background 0.2s',
-                      boxShadow: 'none',
-                      padding: '0.1rem 0.3rem',
-                      minWidth: 0,
-                      minHeight: 0,
-                      lineHeight: 1,
-                    }}
-                  >
-                    <EditIcon size={20} />
-                  </Button>
+                  <DeleteButton onClick={() => handleRemovePolicy(campaign.id)} />
+                  <EditButton onClick={() => setShowAssignModal(campaign.id)} />
                 </>
               ) : (
-                <Button
-                  variant="outline-success"
-                  size="sm"
-                  onClick={() => setShowAssignModal(campaign.id)}
-                  title="Assign Policy"
-                  style={{
-                    transition: 'background 0.2s',
-                    boxShadow: 'none',
-                    padding: '0.1rem 0.3rem',
-                    minWidth: 0,
-                    minHeight: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  <CreateIcon size={20} />
-                </Button>
+                <CreateButton onClick={() => setShowAssignModal(campaign.id)} />
               )
             }
             changeLogSection={
               <Button
-                variant="outline-secondary"
+                className="btn-changelog"
                 size="sm"
                 onClick={() => setShowChangeLog(campaign.id)}
                 style={{
-                  transition: 'background 0.2s',
-                  boxShadow: 'none',
-                  padding: '2px 0.3rem',
+                  padding: '2px 0.6rem',
                   minWidth: 0,
                   minHeight: 0,
                   lineHeight: 1,

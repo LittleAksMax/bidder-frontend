@@ -25,9 +25,17 @@ export type ChangeLogEntry = {
   timestamp: string; // ISO string
 };
 
+export const RULE_TYPES = [
+  { label: 'Range Update Rules', value: 'range' },
+  // Future rule types can be added here
+];
+
+export type RuleType = (typeof RULE_TYPES)[number]['value'];
+
 export type Policy = {
   id: number;
   name: string;
+  type: RuleType;
 };
 
 export type ChangeLogFilter = {

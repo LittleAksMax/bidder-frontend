@@ -1,0 +1,28 @@
+.campaignslist-icon-btn {
+  border: 1.5px solid var(--bs-border-color, #ced4da);
+  background: transparent;
+  padding: 4px 7px;
+  border-radius: 6px;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.campaignslist-icon-btn:hover,
+.campaignslist-icon-btn:focus {
+  border-color: #0d6efd;
+  background: #0d6efd;
+}
+.campaignslist-icon-btn svg {
+  transition:
+    stroke 0.2s,
+    fill 0.2s;
+}
+.campaignslist-icon-btn:hover svg,
+.campaignslist-icon-btn:focus svg {
+  stroke: #fff !important;
+  fill: #0d6efd !important;
+}

@@ -1,25 +1,25 @@
 import { FC } from 'react';
 import { Badge } from 'react-bootstrap';
-import { Policy } from '../api/types';
 
 interface PolicyPillProps {
-  policy: Policy;
+  policyName: string;
   fontSize?: string | number;
+  color?: string; // Bootstrap color: 'info', 'success', etc.
 }
 
-const PolicyPill: FC<PolicyPillProps> = ({ policy, fontSize }) => (
+const PolicyPill: FC<PolicyPillProps> = ({ policyName, fontSize, color = 'info' }) => (
   <Badge
-    bg="info"
+    bg={color}
     pill
     className="ms-2"
     style={{
-      padding: '0.2em 0.6em',
+      padding: '0.1em 0.3em',
       lineHeight: 1,
       verticalAlign: 'middle',
       fontSize,
     }}
   >
-    {policy.name}
+    {policyName}
   </Badge>
 );
 
