@@ -17,7 +17,11 @@ import CampaignsListRowSections from './CampaignsListRowSections';
 const POLICY_PILL_FONT_SIZE = '1em'; // Adjust as needed
 const VIEW_CHANGE_LOG_FONT_SIZE = '1em'; // Adjust as needed
 
-const CampaignsList: FC = () => {
+interface CampaignsListProps {
+  selectedMarketplace: string | null;
+}
+
+const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [expanded, setExpanded] = useState<number[]>([]);
   const [showAssignModal, setShowAssignModal] = useState<number | null>(null);
@@ -29,6 +33,10 @@ const CampaignsList: FC = () => {
       setExpanded(data.map((c) => c.id)); // Expand all campaigns by default
     });
   }, []);
+
+  const filteredCampaigns = selectedMarketplace
+    ? campaigns.filter((c) => c.marketplace === selectedMarketplace)
+    : campaigns;
 
   const handleToggle = (id: number) => {
     setExpanded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -48,7 +56,7 @@ const CampaignsList: FC = () => {
 
   return (
     <ListGroup>
-      {campaigns.map((campaign) => (
+      {filteredCampaigns.map((campaign) => (
         <CampaignsListItem key={campaign.id}>
           <CampaignsListRowSections
             nameSection={

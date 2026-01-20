@@ -12,6 +12,11 @@ import sampleData from './sampleData.json';
 class ApiClient {
   private _isAuthenticated = false;
 
+  async getActiveMarketplaces(): Promise<string[]> {
+    // Hardcoded for now
+    return ['UK', 'US', 'DE', 'ES', 'IT'];
+  }
+
   async getCampaigns(): Promise<Campaign[]> {
     console.log('[apiClient] getCampaigns called');
     return sampleData.campaigns as Campaign[];

@@ -4,6 +4,7 @@
       "id": 1,
       "name": "Campaign 1",
       "policy": { "id": 1, "name": "Policy A" },
+      "marketplace": "UK",
       "adgroups": [
         {
           "id": 101,
@@ -24,6 +25,7 @@
       "id": 2,
       "name": "Campaign 2",
       "policy": { "id": 2, "name": "Policy B" },
+      "marketplace": "UK",
       "adgroups": [
         {
           "id": 201,
@@ -36,6 +38,7 @@
       "id": 3,
       "name": "Campaign 3",
       "policy": { "id": 3, "name": "Policy C" },
+      "marketplace": "UK",
       "adgroups": [
         {
           "id": 301,
@@ -51,6 +54,7 @@
       "id": 4,
       "name": "Campaign 4",
       "policy": { "id": 4, "name": "Policy D" },
+      "marketplace": "UK",
       "adgroups": [
         {
           "id": 401,
@@ -67,6 +71,7 @@
       "id": 5,
       "name": "Campaign 5",
       "policy": { "id": 5, "name": "Policy E" },
+      "marketplace": "UK",
       "adgroups": [
         {
           "id": 501,
@@ -77,6 +82,61 @@
             { "id": 5003, "sku": "SKU-I", "name": "Product I" },
             { "id": 5004, "sku": "SKU-J", "name": "Product J" }
           ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "US Campaign 1",
+      "policy": { "id": 6, "name": "Policy F" },
+      "marketplace": "US",
+      "adgroups": [
+        {
+          "id": 601,
+          "name": "Adgroup US A",
+          "products": [
+            { "id": 6001, "sku": "SKU-US1", "name": "US Product 1" },
+            { "id": 6002, "sku": "SKU-US2", "name": "US Product 2" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "DE Campaign 1",
+      "policy": { "id": 7, "name": "Policy G" },
+      "marketplace": "DE",
+      "adgroups": [
+        {
+          "id": 701,
+          "name": "Adgroup DE A",
+          "products": [{ "id": 7001, "sku": "SKU-DE1", "name": "DE Product 1" }]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "ES Campaign 1",
+      "policy": { "id": 8, "name": "Policy H" },
+      "marketplace": "ES",
+      "adgroups": [
+        {
+          "id": 801,
+          "name": "Adgroup ES A",
+          "products": [{ "id": 8001, "sku": "SKU-ES1", "name": "ES Product 1" }]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "IT Campaign 1",
+      "policy": { "id": 9, "name": "Policy I" },
+      "marketplace": "IT",
+      "adgroups": [
+        {
+          "id": 901,
+          "name": "Adgroup IT A",
+          "products": [{ "id": 9001, "sku": "SKU-IT1", "name": "IT Product 1" }]
         }
       ]
     }

@@ -15,6 +15,7 @@ export type Campaign = {
   name: string;
   adgroups: Adgroup[];
   policy?: Policy; // Attach policy to campaign
+  marketplace: string; // Marketplace code (e.g., 'UK', 'US', etc.)
 };
 
 export type ChangeLogEntry = {
