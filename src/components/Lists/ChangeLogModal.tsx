@@ -75,6 +75,7 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({ show, onHide, adgroups }) => 
               <th>Old Price</th>
               <th>New Price</th>
               <th>Time</th>
+              <th>Policy</th>
             </tr>
           </thead>
           <tbody>
@@ -87,6 +88,7 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({ show, onHide, adgroups }) => 
                   {log.new_price}
                 </td>
                 <td>{new Date(log.timestamp).toLocaleString()}</td>
+                <td>{log.policy ? log.policy.name : <span className="text-muted">N/A</span>}</td>
               </tr>
             ))}
           </tbody>

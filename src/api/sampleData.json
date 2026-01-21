@@ -159,42 +159,48 @@
       "product_id": 1001,
       "old_price": 10.0,
       "new_price": 12.0,
-      "timestamp": "2025-12-20T10:00:00Z"
+      "timestamp": "2025-12-20T10:00:00Z",
+      "policy": { "id": 1, "name": "Policy A" }
     },
     {
       "id": 2,
       "product_id": 1002,
       "old_price": 15.0,
       "new_price": 14.0,
-      "timestamp": "2025-12-25T12:00:00Z"
+      "timestamp": "2025-12-25T12:00:00Z",
+      "policy": { "id": 1, "name": "Policy A" }
     },
     {
       "id": 3,
       "product_id": 1003,
       "old_price": 20.0,
       "new_price": 20.0,
-      "timestamp": "2026-01-01T09:00:00Z"
+      "timestamp": "2026-01-01T09:00:00Z",
+      "policy": { "id": 1, "name": "Policy A" }
     },
     {
       "id": 4,
       "product_id": 2001,
       "old_price": 8.0,
       "new_price": 9.5,
-      "timestamp": "2026-01-10T15:00:00Z"
+      "timestamp": "2026-01-10T15:00:00Z",
+      "policy": { "id": 2, "name": "Policy B" }
     },
     {
       "id": 5,
       "product_id": 3001,
       "old_price": 11.0,
       "new_price": 10.0,
-      "timestamp": "2026-01-15T18:00:00Z"
+      "timestamp": "2026-01-15T18:00:00Z",
+      "policy": { "id": 3, "name": "Policy C" }
     },
     {
       "id": 6,
       "product_id": 4001,
       "old_price": 7.0,
       "new_price": 7.0,
-      "timestamp": "2026-01-17T20:00:00Z"
+      "timestamp": "2026-01-17T20:00:00Z",
+      "policy": { "id": 4, "name": "Policy D" }
     }
   ]
 }

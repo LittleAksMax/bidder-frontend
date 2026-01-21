@@ -24,6 +24,10 @@ export type ChangeLogEntry = {
   old_price: number;
   new_price: number;
   timestamp: string; // ISO string
+  policy?: {
+    id: number;
+    name: string;
+  };
 };
 
 export const RULE_TYPES = [
