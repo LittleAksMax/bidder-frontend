@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import Modal from '../Modal';
-import RangeUpdateRules from './RangeUpdateRules';
 import { RULE_TYPES, RuleType } from '../../api/types';
+import NestedPolicyRules from '../Rules/NestedPolicyRules';
 
 interface EditPolicyModalProps {
   show: boolean;
@@ -11,7 +11,7 @@ interface EditPolicyModalProps {
 
 const EditPolicyModal: FC<EditPolicyModalProps> = ({ show, onClose, ruleType = 'range' }) => {
   let RuleComponent = null;
-  if (ruleType === 'range') RuleComponent = <RangeUpdateRules />;
+  if (ruleType === 'nested') RuleComponent = <NestedPolicyRules />;
   const ruleLabel = RULE_TYPES.find((rt) => rt.value === ruleType)?.label || ruleType;
 
   return (

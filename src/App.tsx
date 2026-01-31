@@ -5,8 +5,8 @@ import RequireAuth from './pages/RequireAuth';
 import Policies from './pages/Policies';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import FormPlaceholder from './components/Lists/FormPlaceholder';
 import NotFound from './pages/NotFound';
+import Help from './pages/Help';
 
 const App: FC = () => {
   return (
@@ -23,7 +23,7 @@ const App: FC = () => {
         <Route path="/policies" element={<Policies />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/form" element={<FormPlaceholder />} />
+        <Route path="/help" element={<Help />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

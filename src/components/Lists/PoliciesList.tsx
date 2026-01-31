@@ -27,7 +27,7 @@ const PoliciesList: FC<PoliciesListProps> = ({ policies, onEdit, onDelete }) => 
             </div>
           </div>
         </div>
-        <span>
+        <span className="d-inline-flex" style={{ gap: '0.5rem' }}>
           <EditButton onClick={() => onEdit(policy.id)} />
           <DeleteButton onClick={() => onDelete(policy.id)} />
         </span>

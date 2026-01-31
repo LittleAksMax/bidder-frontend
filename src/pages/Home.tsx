@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CampaignsListContainer from '../components/Lists/CampaignsListContainer';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
+import { MARKETPLACES } from '../api/types';
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -11,17 +12,8 @@ const Home: FC = () => {
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
 
   useEffect(() => {
-    apiClient
-      .getActiveMarketplaces()
-      .then((marketplaces) => {
-        setMarketplaces(marketplaces);
-        // '!' to avoid issue with marketplaces[0] being undefined
-        setSelectedMarketplace(marketplaces.length > 0 ? marketplaces[0]! : null);
-      })
-      .catch((err) => {
-        console.log("Couldn't fetch marketplaces.");
-        console.error(err);
-      });
+    setMarketplaces(Array.from(MARKETPLACES));
+    setSelectedMarketplace(MARKETPLACES[0]);
   }, []);
 
   return (

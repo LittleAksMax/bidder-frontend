@@ -5,10 +5,14 @@ import '../Modal.css';
 
 interface CreateButtonProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;
+  className?: string;
 }
 
-const CreateButton: FC<CreateButtonProps> = ({ onClick }) => (
-  <Button className="icon-btn icon-btn-green" onClick={onClick}>
+const CreateButton: FC<CreateButtonProps> = ({ onClick, className }) => (
+  <Button
+    className={`icon-btn icon-btn-green d-flex align-items-center justify-content-center ${className}`}
+    onClick={onClick}
+  >
     <CreateIcon />
   </Button>
 );

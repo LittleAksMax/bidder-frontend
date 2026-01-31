@@ -51,26 +51,28 @@ const Policies: FC = () => {
           <h2 className="mb-0">Policies</h2>
         </Card.Header>
         <Card.Body className="p-0 flex-grow-1 d-flex flex-column position-relative">
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            <PoliciesList policies={policies} onEdit={handleUpdate} onDelete={handleDelete} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <PoliciesList policies={policies} onEdit={handleUpdate} onDelete={handleDelete} />
+            </div>
           </div>
           <EditPolicyModal show={editPolicyId !== null} onClose={() => setEditPolicyId(null)} />
-          <div
-            className="policies-taskbar d-flex justify-content-end align-items-center px-3 py-2"
-            style={{
-              borderTop: '1px solid #e0e0e0',
-              background: '#f8f9fa',
-              position: 'sticky',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 2,
-            }}
-          >
-            <CreateButton onClick={() => setShowCreateModal(true)} />
-            <CreatePolicyModal show={showCreateModal} onClose={() => setShowCreateModal(false)} />
-          </div>
         </Card.Body>
+        <div
+          className="policies-taskbar d-flex justify-content-end align-items-center px-3 py-2"
+          style={{
+            borderTop: '1px solid #e0e0e0',
+            background: '#f8f9fa',
+            position: 'sticky',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 2,
+          }}
+        >
+          <CreateButton onClick={() => setShowCreateModal(true)} />
+          <CreatePolicyModal show={showCreateModal} onClose={() => setShowCreateModal(false)} />
+        </div>
       </Card>
     </Page>
   );

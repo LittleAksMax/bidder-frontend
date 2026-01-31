@@ -3,7 +3,7 @@ import { Card } from 'react-bootstrap';
 import CampaignsList from './CampaignsList';
 
 interface CampaignsListContainerProps {
-  selectedMarketplace?: string | null;
+  selectedMarketplace: string | null;
 }
 
 const CampaignsListContainer: FC<CampaignsListContainerProps> = ({ selectedMarketplace }) => (
