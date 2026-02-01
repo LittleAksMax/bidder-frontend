@@ -7,10 +7,16 @@ import './policy-modal.css';
 interface AssignPolicyModalProps {
   show: boolean;
   onHide: () => void;
-  onAssign: (policy: Policy) => void;
+  onAssign: (policyId: number) => void;
+  campaignMarketplace: string; // Add marketplace prop
 }
 
-const AssignPolicyModal: FC<AssignPolicyModalProps> = ({ show, onHide, onAssign }) => {
+const AssignPolicyModal: FC<AssignPolicyModalProps> = ({
+  show,
+  onHide,
+  onAssign,
+  campaignMarketplace,
+}) => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -18,11 +24,15 @@ const AssignPolicyModal: FC<AssignPolicyModalProps> = ({ show, onHide, onAssign 
     if (show) {
       setLoading(true);
       apiClient.getPolicies().then((data) => {
-        setPolicies(data);
+        // Filter policies by marketplace
+        const filteredPolicies = data.filter(
+          (policy) => policy.marketplace === campaignMarketplace,
+        );
+        setPolicies(filteredPolicies);
         setLoading(false);
       });
     }
-  }, [show]);
+  }, [show, campaignMarketplace]);
 
   return (
     <Modal show={show} onHide={onHide} scrollable centered>
@@ -41,7 +51,7 @@ const AssignPolicyModal: FC<AssignPolicyModalProps> = ({ show, onHide, onAssign 
                 key={policy.id}
                 action
                 onClick={() => {
-                  onAssign(policy);
+                  onAssign(policy.id); // Return only the policyID
                   onHide();
                 }}
                 style={{ cursor: 'pointer', transition: 'background 0.2s' }}

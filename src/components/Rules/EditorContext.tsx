@@ -6,7 +6,8 @@ import { setAtPath, updateAtPath } from './treeUtils';
 export type EditorAction =
   | { type: 'set_slot'; path: ReadonlyPath; value: RuleNode | null }
   | { type: 'update_node'; path: ReadonlyPath; patch: Partial<RuleNode> }
-  | { type: 'delete_subtree'; path: ReadonlyPath };
+  | { type: 'delete_subtree'; path: ReadonlyPath }
+  | { type: 'set_root'; root: RuleNode | null }; // Added set_root action
 
 interface EditorState {
   root: RuleNode | null;
@@ -52,6 +53,8 @@ const editorReducer = (state: EditorState, action: EditorAction): EditorState =>
     case 'delete_subtree':
       const rootAfterDelete = setAtPath(state.root, action.path, null);
       return { ...state, root: rootAfterDelete };
+    case 'set_root':
+      return { ...state, root: action.root }; // Handle set_root action
     default:
       console.warn('Unknown action type:', action.type); // Warn for unknown actions
       return state;

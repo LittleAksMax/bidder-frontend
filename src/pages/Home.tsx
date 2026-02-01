@@ -1,9 +1,8 @@
 import { FC, useEffect, useState } from 'react';
-import { Row, Col, Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import CampaignsListContainer from '../components/Lists/CampaignsListContainer';
 import Page from './Page';
-import { apiClient } from '../api/ApiClient';
 import { MARKETPLACES } from '../api/types';
 
 const Home: FC = () => {

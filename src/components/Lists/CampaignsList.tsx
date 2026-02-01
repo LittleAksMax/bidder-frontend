@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from 'react';
 import { apiClient } from '../../api/ApiClient';
 import { ListGroup, Button } from 'react-bootstrap';
-import { Campaign } from '../../api/types';
+import { Campaign, Policy } from '../../api/types';
 import AdgroupsList from './AdgroupsList';
 import ExpandButton from './ExpandButton';
 import PolicyPill from '../Policies/PolicyPill';
@@ -26,6 +26,7 @@ const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
   const [expanded, setExpanded] = useState<number[]>([]);
   const [showAssignModal, setShowAssignModal] = useState<number | null>(null);
   const [showChangeLog, setShowChangeLog] = useState<number | null>(null);
+  const [policies, setPolicies] = useState<Record<number, Policy>>({});
 
   useEffect(() => {
     apiClient.getCampaigns().then((data) => {
@@ -33,6 +34,25 @@ const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
       setExpanded(data.map((c) => c.id)); // Expand all campaigns by default
     });
   }, []);
+
+  useEffect(() => {
+    if (campaigns.length > 0) {
+      const fetchPolicies = async () => {
+        const policyMap: Record<number, Policy> = {};
+        for (const campaign of campaigns) {
+          if (campaign.policyId) {
+            const policy = await apiClient.getPolicyByID(campaign.policyId);
+            if (policy) {
+              policyMap[campaign.policyId] = policy;
+            }
+          }
+        }
+        setPolicies(policyMap);
+      };
+
+      fetchPolicies();
+    }
+  }, [campaigns]);
 
   const filteredCampaigns = selectedMarketplace
     ? campaigns.filter((c) => c.marketplace === selectedMarketplace)
@@ -43,98 +63,96 @@ const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
   };
 
   const handleRemovePolicy = (campaignId: number) => {
-    setCampaigns((prev) =>
-      prev.map((c) => {
-        if (c.id === campaignId) {
-          const { policy, ...rest } = c;
-          return { ...rest };
-        }
-        return c;
-      }),
-    );
+    setCampaigns((prev) => prev.map((c) => (c.id === campaignId ? { ...c, policyId: null } : c)));
   };
 
   return (
     <ListGroup>
-      {filteredCampaigns.map((campaign) => (
-        <CampaignsListItem key={campaign.id}>
-          <CampaignsListRowSections
-            nameSection={
-              <>
-                <ExpandButton
-                  expanded={expanded.includes(campaign.id)}
-                  onToggle={() => handleToggle(campaign.id)}
-                  ariaLabel={
-                    expanded.includes(campaign.id) ? 'Collapse campaign' : 'Expand campaign'
-                  }
-                  className="me-1"
-                />
-                <span
+      {filteredCampaigns.map((campaign) => {
+        const policy = campaign.policyId ? policies[campaign.policyId] : null;
+        return (
+          <CampaignsListItem key={campaign.id}>
+            <CampaignsListRowSections
+              nameSection={
+                <>
+                  <ExpandButton
+                    expanded={expanded.includes(campaign.id)}
+                    onToggle={() => handleToggle(campaign.id)}
+                    ariaLabel={
+                      expanded.includes(campaign.id) ? 'Collapse campaign' : 'Expand campaign'
+                    }
+                    className="me-1"
+                  />
+                  <span
+                    style={{
+                      verticalAlign: 'middle',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {campaign.name}
+                  </span>
+                </>
+              }
+              policySection={
+                policy ? (
+                  <PolicyPill ruleType={policy.type} fontSize={POLICY_PILL_FONT_SIZE} />
+                ) : null
+              }
+              buttonsSection={
+                policy ? (
+                  <>
+                    <DeleteButton onClick={() => handleRemovePolicy(campaign.id)} />
+                    <EditButton onClick={() => setShowAssignModal(campaign.id)} />
+                  </>
+                ) : (
+                  <CreateButton onClick={() => setShowAssignModal(campaign.id)} />
+                )
+              }
+              changeLogSection={
+                <Button
+                  className="btn-changelog"
+                  size="sm"
+                  onClick={() => setShowChangeLog(campaign.id)}
                   style={{
-                    verticalAlign: 'middle',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    padding: '2px 0.6rem',
+                    minWidth: 0,
+                    minHeight: 0,
+                    lineHeight: 1,
+                    fontSize: VIEW_CHANGE_LOG_FONT_SIZE,
                   }}
                 >
-                  {campaign.name}
-                </span>
-              </>
-            }
-            policySection={
-              campaign.policy ? (
-                <PolicyPill policyName={campaign.policy.name} fontSize={POLICY_PILL_FONT_SIZE} />
-              ) : null
-            }
-            buttonsSection={
-              campaign.policy ? (
-                <>
-                  <DeleteButton onClick={() => handleRemovePolicy(campaign.id)} />
-                  <EditButton onClick={() => setShowAssignModal(campaign.id)} />
-                </>
-              ) : (
-                <CreateButton onClick={() => setShowAssignModal(campaign.id)} />
-              )
-            }
-            changeLogSection={
-              <Button
-                className="btn-changelog"
-                size="sm"
-                onClick={() => setShowChangeLog(campaign.id)}
-                style={{
-                  padding: '2px 0.6rem',
-                  minWidth: 0,
-                  minHeight: 0,
-                  lineHeight: 1,
-                  fontSize: VIEW_CHANGE_LOG_FONT_SIZE,
-                }}
-              >
-                View Change Log
-              </Button>
-            }
-          />
-          {expanded.includes(campaign.id) && (
-            <div className="mt-2">
-              <AdgroupsList adgroups={campaign.adgroups} />
-            </div>
-          )}
-          <AssignPolicyModal
-            show={showAssignModal === campaign.id}
-            onHide={() => setShowAssignModal(null)}
-            onAssign={(policy) => {
-              setShowAssignModal(null);
-              setCampaigns((prev) =>
-                prev.map((c) => (c.id === campaign.id ? { ...c, policy } : c)),
-              );
-            }}
-          />
-          <ChangeLogModal
-            show={showChangeLog === campaign.id}
-            onHide={() => setShowChangeLog(null)}
-            adgroups={campaign.adgroups}
-          />
-        </CampaignsListItem>
-      ))}
+                  View Change Log
+                </Button>
+              }
+            />
+            {expanded.includes(campaign.id) && (
+              <div className="mt-2">
+                <AdgroupsList adgroups={campaign.adgroups} />
+              </div>
+            )}
+            <AssignPolicyModal
+              show={showAssignModal === campaign.id}
+              onHide={() => setShowAssignModal(null)}
+              onAssign={(policyId: number) => {
+                setShowAssignModal(null);
+                setCampaigns((prevCampaigns) =>
+                  prevCampaigns.map((campaign) =>
+                    campaign.id === campaign.id ? { ...campaign, policyId } : campaign,
+                  ),
+                );
+              }}
+              campaignMarketplace={campaign.marketplace} // Pass marketplace for filtering
+            />
+            <ChangeLogModal
+              show={showChangeLog === campaign.id}
+              onHide={() => setShowChangeLog(null)}
+              adgroups={campaign.adgroups}
+            />
+          </CampaignsListItem>
+        );
+      })}
     </ListGroup>
   );
 };

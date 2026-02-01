@@ -14,7 +14,7 @@ export type Campaign = {
   id: number;
   name: string;
   adgroups: Adgroup[];
-  policy?: Policy; // Attach policy to campaign
+  policyId: number | null;
   marketplace: string; // Marketplace code (e.g., 'UK', 'US', etc.)
 };
 
@@ -81,6 +81,8 @@ export type Policy = {
   id: number;
   name: string;
   type: RuleType;
+  marketplace: Marketplace;
+  rule: RuleNode;
 };
 
 export type ChangeLogFilter = {

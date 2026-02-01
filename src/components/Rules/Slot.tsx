@@ -1,11 +1,10 @@
 import { FC, useMemo } from 'react';
 import { useEditorState, useEditorDispatch } from './EditorContext';
-import { getAtPath, usedVarsAlongPath } from './treeUtils';
+import { Path, getAtPath, usedVarsAlongPath } from './treeUtils';
 import { VARIABLE_TYPES, VariableType } from '../../api/types';
 import { EmptySlot } from './EmptySlot';
 import { ConditionNode } from './ConditionNode';
 import { TerminalNode } from './TerminalNode';
-import { Path } from './treeUtils';
 
 interface SlotProps {
   path: Path;

@@ -6,6 +6,9 @@ import {
   ChangeLogEntry,
   ChangeLogResult,
   ChangeLogQuery,
+  RuleNode,
+  Marketplace,
+  RuleType,
 } from './types';
 import sampleData from './sampleData.json';
 
@@ -44,10 +47,26 @@ class ApiClient {
     return sampleData.policies as Policy[];
   }
 
-  async createPolicy(policy: { name: string }): Promise<Policy> {
-    console.log('[apiClient] createPolicy called with policy:', policy);
+  async createPolicy(
+    name: string,
+    type: RuleType,
+    marketplace: Marketplace,
+    rule: RuleNode,
+  ): Promise<Policy> {
+    console.log('[apiClient] createPolicy called with:', { name, type, marketplace, rule });
     // This only returns a new policy object, does not persist to JSON
-    return { id: Math.floor(Math.random() * 10000), type: 'Range Update Rules', ...policy };
+    return {
+      id: Math.floor(Math.random() * 10000),
+      name,
+      type,
+      marketplace,
+      rule,
+    };
+  }
+
+  async getPolicyByID(policyID: number): Promise<Policy | null> {
+    const policies = await this.getPolicies();
+    return policies.find((policy) => policy.id === policyID) || null;
   }
 
   async getChangeLogs(query: ChangeLogQuery): Promise<ChangeLogResult> {

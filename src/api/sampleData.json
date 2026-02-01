@@ -3,7 +3,7 @@
     {
       "id": 1,
       "name": "Campaign 1",
-      "policy": { "id": 1, "name": "Policy A" },
+      "policyId": 1,
       "marketplace": "UK",
       "adgroups": [
         {
@@ -24,7 +24,7 @@
     {
       "id": 2,
       "name": "Campaign 2",
-      "policy": { "id": 2, "name": "Policy B" },
+      "policyId": 2,
       "marketplace": "UK",
       "adgroups": [
         {
@@ -37,7 +37,7 @@
     {
       "id": 3,
       "name": "Campaign 3",
-      "policy": { "id": 3, "name": "Policy C" },
+      "policyId": 3,
       "marketplace": "UK",
       "adgroups": [
         {
@@ -53,7 +53,7 @@
     {
       "id": 4,
       "name": "Campaign 4",
-      "policy": { "id": 4, "name": "Policy D" },
+      "policyId": 4,
       "marketplace": "UK",
       "adgroups": [
         {
@@ -70,7 +70,7 @@
     {
       "id": 5,
       "name": "Campaign 5",
-      "policy": { "id": 5, "name": "Policy E" },
+      "policyId": 5,
       "marketplace": "UK",
       "adgroups": [
         {
@@ -88,7 +88,7 @@
     {
       "id": 6,
       "name": "US Campaign 1",
-      "policy": { "id": 6, "name": "Policy F" },
+      "policyId": 6,
       "marketplace": "US",
       "adgroups": [
         {
@@ -104,7 +104,7 @@
     {
       "id": 7,
       "name": "DE Campaign 1",
-      "policy": { "id": 7, "name": "Policy G" },
+      "policyId": 7,
       "marketplace": "DE",
       "adgroups": [
         {
@@ -117,7 +117,7 @@
     {
       "id": 8,
       "name": "ES Campaign 1",
-      "policy": { "id": 8, "name": "Policy H" },
+      "policyId": 8,
       "marketplace": "ES",
       "adgroups": [
         {
@@ -130,7 +130,7 @@
     {
       "id": 9,
       "name": "IT Campaign 1",
-      "policy": { "id": 9, "name": "Policy I" },
+      "policyId": 9,
       "marketplace": "IT",
       "adgroups": [
         {
@@ -142,16 +142,227 @@
     }
   ],
   "policies": [
-    { "id": 1, "name": "Policy A", "type": "range" },
-    { "id": 2, "name": "Policy B", "type": "range" },
-    { "id": 3, "name": "Policy C", "type": "range" },
-    { "id": 4, "name": "Policy D", "type": "range" },
-    { "id": 5, "name": "Policy E", "type": "range" },
-    { "id": 6, "name": "Policy F", "type": "range" },
-    { "id": 7, "name": "Policy G", "type": "range" },
-    { "id": 8, "name": "Policy H", "type": "range" },
-    { "id": 9, "name": "Policy I", "type": "range" },
-    { "id": 10, "name": "Policy J", "type": "range" }
+    {
+      "id": 1,
+      "name": "Policy A",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Policy B",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Policy C",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Policy D",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Policy E",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Policy F",
+      "type": "nested",
+      "marketplace": "US",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "Policy G",
+      "type": "nested",
+      "marketplace": "DE",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Policy H",
+      "type": "nested",
+      "marketplace": "ES",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Policy I",
+      "type": "nested",
+      "marketplace": "IT",
+      "rule": {
+        "type": "condition",
+        "variable": "clicks",
+        "min": 10,
+        "max": 50,
+        "if": {
+          "type": "terminal",
+          "op": {
+            "type": "add",
+            "amount": {
+              "neg": false,
+              "amount": 5,
+              "perc": true
+            }
+          }
+        },
+        "else": {
+          "type": "terminal",
+          "op": {
+            "type": "add",
+            "amount": {
+              "neg": true,
+              "amount": 2,
+              "perc": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Policy J",
+      "type": "nested",
+      "marketplace": "FR",
+      "rule": {
+        "type": "condition",
+        "variable": "impressions",
+        "min": 100,
+        "max": 500,
+        "if": {
+          "type": "condition",
+          "variable": "sales",
+          "min": 5,
+          "max": 20,
+          "if": {
+            "type": "terminal",
+            "op": {
+              "type": "mul",
+              "amount": {
+                "neg": false,
+                "amount": 1.1,
+                "perc": false
+              }
+            }
+          },
+          "else": {
+            "type": "terminal",
+            "op": {
+              "type": "add",
+              "amount": {
+                "neg": false,
+                "amount": 3,
+                "perc": true
+              }
+            }
+          }
+        },
+        "else": {
+          "type": "terminal",
+          "op": {
+            "type": "add",
+            "amount": {
+              "neg": true,
+              "amount": 10,
+              "perc": false
+            }
+          }
+        }
+      }
+    }
   ],
   "changeLogs": [
     {

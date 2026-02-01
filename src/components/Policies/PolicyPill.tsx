@@ -1,25 +1,27 @@
 import { FC } from 'react';
 import { Badge } from 'react-bootstrap';
+import { RULE_TYPES, RuleType } from '../../api/types';
 
 interface PolicyPillProps {
-  policyName: string;
+  ruleType: RuleType;
   fontSize?: string | number;
-  color?: string; // Bootstrap color: 'info', 'success', etc.
+  colour?: string; // Bootstrap colour: 'info', 'success', etc.
 }
 
-const PolicyPill: FC<PolicyPillProps> = ({ policyName, fontSize, color = 'info' }) => (
+const PolicyPill: FC<PolicyPillProps> = ({ ruleType, fontSize, colour = 'info' }) => (
   <Badge
-    bg={color}
+    bg={colour}
     pill
     className="ms-2"
     style={{
       padding: '0.1em 0.3em',
       lineHeight: 1,
       verticalAlign: 'middle',
+      width: '7em',
       fontSize,
     }}
   >
-    {policyName}
+    {RULE_TYPES.find((r) => r.value === ruleType)?.label}
   </Badge>
 );
 

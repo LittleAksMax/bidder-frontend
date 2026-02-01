@@ -4,7 +4,8 @@ import EditButton from '../buttons/EditButton';
 import DeleteButton from '../buttons/DeleteButton';
 import { Policy } from '../../api/types';
 import PolicyPill from '../Policies/PolicyPill';
-// import './PoliciesList.css';
+import MarketplacePill from '../Policies/MarketplacePill';
+import PolicyName from '../Policies/PolicyName';
 
 interface PoliciesListProps {
   policies: Policy[];
@@ -22,8 +23,9 @@ const PoliciesList: FC<PoliciesListProps> = ({ policies, onEdit, onDelete }) => 
         <div className="d-flex align-items-center" style={{ gap: '1.5rem' }}>
           <div className="d-flex flex-column">
             <div style={{ display: 'flex', alignItems: 'center', fontWeight: 500, gap: '0.5em' }}>
-              {policy.name}
-              <PolicyPill policyName="Range Update Rules" color="success" fontSize={18} />
+              <PolicyName name={policy.name} />
+              <PolicyPill ruleType={policy.type} colour="success" fontSize={18} />
+              <MarketplacePill marketplace={policy.marketplace} fontSize={18} />
             </div>
           </div>
         </div>

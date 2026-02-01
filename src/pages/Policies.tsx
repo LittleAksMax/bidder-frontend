@@ -2,11 +2,8 @@ import { FC, useState, useEffect } from 'react';
 import { Card, Button } from 'react-bootstrap';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
-import { RULE_TYPES } from '../api/types';
 import { useNavigate } from 'react-router-dom';
 import CreateButton from '../components/buttons/CreateButton';
-import EditButton from '../components/buttons/EditButton';
-import DeleteButton from '../components/buttons/DeleteButton';
 
 import CreatePolicyModal from '../components/Policies/CreatePolicyModal';
 import EditPolicyModal from '../components/Policies/EditPolicyModal';
@@ -22,15 +19,15 @@ const Policies: FC = () => {
     apiClient.getPolicies().then(setPolicies);
   }, []);
 
-  // Creation logic will be handled in the modal in the future
-
   const handleDelete = async (id: number) => {
-    // TODO: Implement delete logic
     setPolicies((prev) => prev.filter((p) => p.id !== id));
   };
+
   const handleUpdate = (id: number) => {
     setEditPolicyId(id);
   };
+
+  const policyToEdit = policies.find((policy) => policy.id === editPolicyId) || null; // Find policy by ID
 
   return (
     <Page showSettings>
@@ -50,13 +47,17 @@ const Policies: FC = () => {
         <Card.Header className="bg-success text-white d-flex align-items-center">
           <h2 className="mb-0">Policies</h2>
         </Card.Header>
-        <Card.Body className="p-0 flex-grow-1 d-flex flex-column position-relative">
+        <Card.Body className="p-0 grow d-flex flex-column position-relative">
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               <PoliciesList policies={policies} onEdit={handleUpdate} onDelete={handleDelete} />
             </div>
           </div>
-          <EditPolicyModal show={editPolicyId !== null} onClose={() => setEditPolicyId(null)} />
+          <EditPolicyModal
+            show={editPolicyId !== null}
+            policy={policyToEdit} // Pass the correct policy
+            onClose={() => setEditPolicyId(null)}
+          />
         </Card.Body>
         <div
           className="policies-taskbar d-flex justify-content-end align-items-center px-3 py-2"

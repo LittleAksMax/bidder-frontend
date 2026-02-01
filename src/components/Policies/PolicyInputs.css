@@ -1,0 +1,13 @@
+.policy-inputs {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.policy-input {
+  font-size: 1.1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 10em;
+}
