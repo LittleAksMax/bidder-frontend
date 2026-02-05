@@ -362,6 +362,142 @@
           }
         }
       }
+    },
+    {
+      "id": 11,
+      "name": "Policy I",
+      "type": "nested",
+      "marketplace": "ES",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Policy J",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Policy L",
+      "type": "nested",
+      "marketplace": "IT",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Policy M",
+      "type": "nested",
+      "marketplace": "US",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Policy N",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "Policy O",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "Policy P",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "Policy Q",
+      "type": "nested",
+      "marketplace": "UK",
+      "rule": {
+        "type": "terminal",
+        "op": {
+          "type": "add",
+          "amount": {
+            "neg": false,
+            "amount": 1,
+            "perc": false
+          }
+        }
+      }
     }
   ],
   "changeLogs": [
