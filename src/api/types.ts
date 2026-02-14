@@ -1,3 +1,17 @@
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  updatedAt: Date;
+  createdAt: Date;
+  role: string;
+}
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+}
+
 export type Product = {
   id: number;
   sku: string;

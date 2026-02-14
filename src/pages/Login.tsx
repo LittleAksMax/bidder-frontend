@@ -4,16 +4,25 @@ import { apiClient } from '../api/ApiClient';
 import AuthForm from '../components/auth/AuthForm';
 import CenteredContainer from '../components/CenteredContainer';
 import AuthRedirect from '../components/auth/AuthRedirect';
+import { authClient } from '../api/AuthClient';
 
 const Login: FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    apiClient.setAuthenticated(true);
-    navigate('/');
+    const resp = await authClient.login({
+      email: email,
+      password: password,
+    });
+
+    if (resp) {
+      navigate('/');
+    } else {
+      alert('Login failed!');
+    }
   };
 
   return (

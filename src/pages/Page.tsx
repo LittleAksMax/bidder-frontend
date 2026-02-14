@@ -1,14 +1,15 @@
 import { FC, ReactNode } from 'react';
-import { Container } from 'react-bootstrap';
+import { Container, Spinner } from 'react-bootstrap';
 import SettingsMenu from './SettingsMenu';
 import AccountButton from './AccountButton';
 
 interface PageProps {
   children: ReactNode;
   showSettings?: boolean;
+  loading?: boolean; // Added loading prop
 }
 
-const Page: FC<PageProps> = ({ children, showSettings = false }) => (
+const Page: FC<PageProps> = ({ children, showSettings = false, loading = false }) => (
   <Container
     fluid
     className="vh-100 d-flex flex-column justify-content-center align-items-center p-0 position-relative"
@@ -38,13 +39,19 @@ const Page: FC<PageProps> = ({ children, showSettings = false }) => (
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-start',
-        alignItems: 'stretch',
+        justifyContent: 'center',
+        alignItems: 'center',
         overflow: 'auto',
         fontSize: '1.05rem',
       }}
     >
-      {children}
+      {loading ? (
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      ) : (
+        children
+      )}
     </div>
   </Container>
 );

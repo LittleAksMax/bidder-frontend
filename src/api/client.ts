@@ -1,31 +1,49 @@
-// src/api/client.ts
-
-// Get API gateway URL from Vite environment variables, with fallback and validation
+import { SdkResponse } from './requests';
 import { config } from './config';
 
-export async function apiRequest(path: string, options?: RequestInit) {
-  const baseUrl = config.apiGatewayUrl;
-  const url = baseUrl.endsWith('/')
-    ? `${baseUrl}${path.replace(/^\//, '')}`
-    : `${baseUrl}${path.startsWith('/') ? path : '/' + path}`;
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers || {}),
-    },
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-  // Try to parse JSON, fallback to text if not JSON
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return response.json();
-  }
-  return response.text();
+// Define a type for API request options
+interface ApiRequestOptions {
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: any;
 }
 
-// Usage example:
-// apiRequest('/resource', { method: 'GET' })
+// Utility function to handle API requests
+export const createApiRequest = async ({
+  endpoint,
+  method,
+  headers = {},
+  body,
+}: ApiRequestOptions): Promise<SdkResponse<Record<string, any>>> => {
+  try {
+    const response = await fetch(config.apiGatewayUrl + endpoint, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : null, // Ensure body is null when undefined
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Attempt to parse JSON, return null if the body is empty
+    let data = null;
+    try {
+      const responseJSON = await response.json();
+      data = responseJSON.data;
+    } catch (jsonError) {
+      if (response.headers.get('Content-Type')?.includes('application/json')) {
+        console.error('Failed to parse JSON response:', jsonError);
+      }
+    }
+
+    return [data, null];
+  } catch (error) {
+    console.error('API Request Error:', error);
+    return [null, error as Error]; // Explicitly cast error to Error type
+  }
+};

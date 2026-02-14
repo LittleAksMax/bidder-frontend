@@ -13,8 +13,6 @@ import {
 import sampleData from './sampleData.json';
 
 class ApiClient {
-  private _isAuthenticated = false;
-
   async getActiveMarketplaces(): Promise<string[]> {
     // Hardcoded for now
     return ['UK', 'US', 'DE', 'ES', 'IT'];
@@ -79,18 +77,6 @@ class ApiClient {
     const startIdx = (page - 1) * pageSize;
     const entries = all.slice(startIdx, startIdx + pageSize);
     return { entries, total };
-  }
-
-  setAuthenticated(authenticated: boolean) {
-    this._isAuthenticated = authenticated;
-  }
-
-  isAuthenticated(): boolean {
-    return this._isAuthenticated;
-  }
-
-  ensureAuthenticated(): boolean {
-    return this.isAuthenticated();
   }
 }
 
