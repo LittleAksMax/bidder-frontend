@@ -13,17 +13,18 @@ import './Policies.css';
 const Policies: FC = () => {
   const [policies, setPolicies] = useState<any[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editPolicyId, setEditPolicyId] = useState<number | null>(null);
+  const [editPolicyId, setEditPolicyId] = useState<string | null>(null);
   const navigate = useNavigate();
   useEffect(() => {
     apiClient.getPolicies().then(setPolicies);
   }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     setPolicies((prev) => prev.filter((p) => p.id !== id));
+    await apiClient.deletePolicyByID(id);
   };
 
-  const handleUpdate = (id: number) => {
+  const handleUpdate = (id: string) => {
     setEditPolicyId(id);
   };
 

@@ -9,8 +9,8 @@ import PolicyName from '../Policies/PolicyName';
 
 interface PoliciesListProps {
   policies: Policy[];
-  onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const PoliciesList: FC<PoliciesListProps> = ({ policies, onEdit, onDelete }) => (

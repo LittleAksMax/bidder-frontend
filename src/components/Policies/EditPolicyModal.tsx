@@ -20,7 +20,7 @@ const EditPolicyModal: FC<EditPolicyModalProps> = ({ show, onClose, policy }) =>
     RuleComponent = (
       <EditorProvider>
         <NestedPolicyRules
-          rule={policy.rule} // Pass the existing rule to NestedPolicyRules
+          rule={policy.rules} // Pass the existing rule to NestedPolicyRules
           onSlotsFilledChange={() => {}}
         />
       </EditorProvider>

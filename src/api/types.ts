@@ -2,8 +2,6 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  updatedAt: Date;
-  createdAt: Date;
   role: string;
 }
 
@@ -29,7 +27,7 @@ export type Campaign = {
   name: string;
   adgroups: Adgroup[];
   policyId: number | null;
-  marketplace: string; // Marketplace code (e.g., 'UK', 'US', etc.)
+  marketplace: Marketplace; // Marketplace code (e.g., 'UK', 'US', etc.)
 };
 
 export type ChangeLogEntry = {
@@ -92,11 +90,11 @@ export type ConditionRuleNode = {
 export type RuleNode = TerminalRuleNode | ConditionRuleNode;
 
 export type Policy = {
-  id: number;
+  id: string;
   name: string;
   type: RuleType;
   marketplace: Marketplace;
-  rule: RuleNode;
+  rules: RuleNode;
 };
 
 export type ChangeLogFilter = {
@@ -116,5 +114,5 @@ export type ChangeLogResult = {
   total: number;
 };
 
-export const MARKETPLACES = ['US', 'UK', 'DE', 'FR', 'IT', 'ES'] as const;
+export const MARKETPLACES = ['US', 'CA', 'MX', 'UK', 'DE', 'FR', 'IT', 'ES'] as const;
 export type Marketplace = (typeof MARKETPLACES)[number];

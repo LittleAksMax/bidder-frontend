@@ -17,7 +17,7 @@ const Home: FC = () => {
 
   return (
     <Page showSettings>
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="w-100 d-flex justify-content-between align-items-center mb-3">
         <Dropdown onSelect={(mkt) => setSelectedMarketplace(mkt || null)}>
           <Dropdown.Toggle variant="outline-secondary" id="marketplace-dropdown" size="sm">
             {selectedMarketplace || 'No Marketplaces'}

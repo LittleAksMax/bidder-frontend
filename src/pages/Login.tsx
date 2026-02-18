@@ -1,15 +1,21 @@
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../api/ApiClient';
 import AuthForm from '../components/auth/AuthForm';
 import CenteredContainer from '../components/CenteredContainer';
 import AuthRedirect from '../components/auth/AuthRedirect';
 import { authClient } from '../api/AuthClient';
 
 const Login: FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authClient.isAuthenticated()) {
+      navigate('/'); // Redirect to home if authenticated
+    }
+  }, [navigate]); // Dependency array includes navigate
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

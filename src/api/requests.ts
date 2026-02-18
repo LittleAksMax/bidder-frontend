@@ -3,7 +3,7 @@
 import { TokenPair, User } from './types';
 
 // Easier tuple-form of response objects
-export type SdkResponse<T> = [T | null, Error | null];
+export type SdkResponse<T> = [boolean, T | null, Error | null];
 
 // Interfaces for request payloads
 export interface LoginRequest {
