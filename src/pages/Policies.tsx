@@ -9,6 +9,7 @@ import CreatePolicyModal from '../components/Policies/CreatePolicyModal';
 import EditPolicyModal from '../components/Policies/EditPolicyModal';
 import PoliciesList from '../components/Lists/PoliciesList';
 import './Policies.css';
+import { Policy } from '../api/types';
 
 const Policies: FC = () => {
   const [policies, setPolicies] = useState<any[]>([]);
@@ -24,8 +25,56 @@ const Policies: FC = () => {
     await apiClient.deletePolicyByID(id);
   };
 
-  const handleUpdate = (id: string) => {
+  const handleEdit = (id: string) => {
     setEditPolicyId(id);
+  };
+
+  const handleUpdatePolicy = async (id: string, name: string, rules: any): Promise<boolean> => {
+    // Close modal
+    setEditPolicyId(null);
+
+    // Optimistic update: update policy immediately in the list
+    setPolicies((prev) =>
+      prev.map((policy) => (policy.id === id ? { ...policy, name, rules } : policy)),
+    );
+
+    const res = await apiClient.updatePolicy(id, name, rules);
+
+    if (res) {
+      // Replace with actual server response
+      setPolicies((prev) => prev.map((policy) => (policy.id === id ? res : policy)));
+      return true;
+    } else {
+      // Revert optimistic update by refetching
+      const freshPolicies = await apiClient.getPolicies();
+      setPolicies(freshPolicies);
+      return false;
+    }
+  };
+
+  const handleCreate = async (p: Policy): Promise<boolean> => {
+    // Close modal in any case
+    setShowCreateModal(false);
+
+    // Just-in-case avoid null rules
+    if (!p.rules) return false;
+
+    // Optimistic update: add temp policy immediately
+    const tempId = `temp-${Date.now()}`;
+    const tempPolicy = { ...p, id: tempId };
+    setPolicies((prev) => [...prev, tempPolicy]);
+
+    const res = await apiClient.createPolicy(p.name, p.type, p.marketplace, p.rules);
+
+    if (res) {
+      // Replace temp policy with real one
+      setPolicies((prev) => prev.map((policy) => (policy.id === tempId ? res : policy)));
+      return true;
+    } else {
+      // Remove temp policy on failure
+      setPolicies((prev) => prev.filter((policy) => policy.id !== tempId));
+      return false;
+    }
   };
 
   const policyToEdit = policies.find((policy) => policy.id === editPolicyId) || null; // Find policy by ID
@@ -56,13 +105,14 @@ const Policies: FC = () => {
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              <PoliciesList policies={policies} onEdit={handleUpdate} onDelete={handleDelete} />
+              <PoliciesList policies={policies} onEdit={handleEdit} onDelete={handleDelete} />
             </div>
           </div>
 
           <EditPolicyModal
             show={editPolicyId !== null}
             policy={policyToEdit}
+            handleUpdate={handleUpdatePolicy}
             onClose={() => setEditPolicyId(null)}
           />
         </Card.Body>
@@ -74,7 +124,11 @@ const Policies: FC = () => {
             }}
           >
             <CreateButton onClick={() => setShowCreateModal(true)} />
-            <CreatePolicyModal show={showCreateModal} onClose={() => setShowCreateModal(false)} />
+            <CreatePolicyModal
+              show={showCreateModal}
+              handleCreate={handleCreate}
+              onClose={() => setShowCreateModal(false)}
+            />
           </div>
         </Card.Footer>
       </Card>

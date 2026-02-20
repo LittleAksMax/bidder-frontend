@@ -20,10 +20,24 @@ const App: FC = () => {
             </RequireAuth>
           }
         />
-        <Route path="/policies" element={<Policies />} />
+        <Route
+          path="/policies"
+          element={
+            <RequireAuth>
+              <Policies />
+            </RequireAuth>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/help" element={<Help />} />
+        <Route
+          path="/help"
+          element={
+            <RequireAuth>
+              <Help />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

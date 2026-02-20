@@ -82,7 +82,7 @@ const Slot: FC<SlotProps> = ({ path }) => {
     );
   }
   if (node.type === 'terminal') {
-    return <TerminalNode node={node} path={[...path, 'terminal']} />;
+    return <TerminalNode node={node} path={path} />;
   }
   return null;
 };

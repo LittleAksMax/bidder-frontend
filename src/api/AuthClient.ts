@@ -15,6 +15,21 @@ const usernameKey = 'USER_NAME';
 const emailKey = 'USER_EMAIL';
 const roleKey = 'USER_ROLE';
 
+// Helper function to check if JWT token is expired
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3 || !parts[1]) {
+      return true; // Invalid JWT format
+    }
+    const payload = JSON.parse(atob(parts[1]!));
+    const expiry = payload.exp * 1000; // Convert to milliseconds
+    return Date.now() >= expiry;
+  } catch (error) {
+    return true; // If we can't decode it, consider it expired
+  }
+};
+
 class AuthClient {
   private clearCredentials() {
     localStorage.removeItem(accessTokenKey);
@@ -139,12 +154,52 @@ class AuthClient {
 
   isAuthenticated(): boolean {
     const accessToken = localStorage.getItem(accessTokenKey);
+    const refreshToken = localStorage.getItem(refreshTokenKey);
     const userId = localStorage.getItem(userIdKey);
-    return accessToken !== null && userId !== null;
+
+    // Check if we have all necessary tokens and user data
+    return !!accessToken && !!refreshToken && !!userId;
   }
 
-  getAccessToken(): string | null {
-    return localStorage.getItem(accessTokenKey);
+  async ensureAuthenticated(): Promise<boolean> {
+    const accessToken = localStorage.getItem(accessTokenKey);
+    const refreshToken = localStorage.getItem(refreshTokenKey);
+    
+    if (!refreshToken) {
+      this.clearCredentials();
+      return false;
+    }
+
+    // If no access token or it's expired, try to refresh
+    if (!accessToken || isTokenExpired(accessToken)) {
+      const refreshed = await this.refresh();
+      if (!refreshed) {
+        this.clearCredentials();
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  async getAccessToken(): Promise<string | null> {
+    const accessToken = localStorage.getItem(accessTokenKey);
+
+    if (!accessToken) {
+      return null;
+    }
+
+    // If token is expired, try to refresh it
+    if (isTokenExpired(accessToken)) {
+      const refreshed = await this.refresh();
+      if (!refreshed) {
+        this.clearCredentials();
+        return null;
+      }
+      return localStorage.getItem(accessTokenKey);
+    }
+
+    return accessToken;
   }
 }
 

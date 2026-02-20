@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { TerminalRuleNode } from '../../api/types';
 import DeleteButton from '../buttons/DeleteButton';
 import { useEditorDispatch } from '../Rules/EditorContext';
@@ -12,14 +12,99 @@ interface TerminalNodeProps {
 }
 
 export const TerminalNode: FC<TerminalNodeProps> = ({ node, path, onEdit, onDelete }) => {
+  const [opType, setOpType] = useState<'add' | 'mul'>(node.op.type as 'add' | 'mul');
   const [isPercentage, setIsPercentage] = useState(node.op.amount.perc);
-  const [isAddition, setIsAddition] = useState(node.op.type === 'add');
+  const [isNegative, setIsNegative] = useState(node.op.amount.neg);
   const [amount, setAmount] = useState(node.op.amount.amount);
 
-  const operationColor = isAddition ? 'green' : 'red';
-  const holographicHint = `{= ${isAddition ? '+' : '-'}${amount}${isPercentage ? '%' : ''} }`;
-
   const dispatch = useEditorDispatch();
+
+  // Sync state when node changes (for editing existing policies)
+  useEffect(() => {
+    setOpType(node.op.type as 'add' | 'mul');
+    setIsPercentage(node.op.amount.perc);
+    setIsNegative(node.op.amount.neg);
+    setAmount(node.op.amount.amount);
+  }, [node]);
+
+  const handlePercentageToggle = () => {
+    const newIsPercentage = !isPercentage;
+    setIsPercentage(newIsPercentage);
+    dispatch({
+      type: 'update_node',
+      path,
+      patch: {
+        op: {
+          type: opType,
+          amount: {
+            neg: isNegative,
+            perc: newIsPercentage,
+            amount: amount,
+          },
+        },
+      },
+    });
+  };
+
+  const handleNegativeToggle = () => {
+    const newIsNegative = !isNegative;
+    setIsNegative(newIsNegative);
+    dispatch({
+      type: 'update_node',
+      path,
+      patch: {
+        op: {
+          type: opType,
+          amount: {
+            neg: newIsNegative,
+            perc: isPercentage,
+            amount: amount,
+          },
+        },
+      },
+    });
+  };
+
+  const handleAmountChange = (newAmount: number) => {
+    setAmount(newAmount);
+    dispatch({
+      type: 'update_node',
+      path,
+      patch: {
+        op: {
+          type: opType,
+          amount: {
+            neg: isNegative,
+            perc: isPercentage,
+            amount: newAmount,
+          },
+        },
+      },
+    });
+  };
+
+  // Future: Add operation type toggle handler
+  // const handleOpTypeToggle = () => {
+  //   const newOpType = opType === 'add' ? 'mul' : 'add';
+  //   setOpType(newOpType);
+  //   dispatch({
+  //     type: 'update_node',
+  //     path,
+  //     patch: {
+  //       op: {
+  //         type: newOpType,
+  //         amount: {
+  //           neg: isNegative,
+  //           perc: isPercentage,
+  //           amount: amount,
+  //         },
+  //       },
+  //     },
+  //   });
+  // };
+
+  const operationColor = isNegative ? 'red' : 'green';
+  const holographicHint = `{= ${isNegative ? '-' : '+'}${amount}${isPercentage ? '%' : ''} }`;
 
   return (
     <div
@@ -40,15 +125,15 @@ export const TerminalNode: FC<TerminalNodeProps> = ({ node, path, onEdit, onDele
             cursor: 'pointer',
             width: '0.5em',
           }}
-          onClick={() => setIsAddition((prev) => !prev)}
+          onClick={handleNegativeToggle}
         >
           {/* ndash looks similar in width to the + */}
-          {isAddition ? '+' : <span>&ndash;</span>}
+          {isNegative ? <span>&ndash;</span> : '+'}
         </span>
         <input
           type="number"
           value={amount}
-          onChange={(e) => setAmount(parseFloat(e.target.value))}
+          onChange={(e) => handleAmountChange(parseFloat(e.target.value))}
           style={{ width: 60 }}
         />
         <span
@@ -56,7 +141,7 @@ export const TerminalNode: FC<TerminalNodeProps> = ({ node, path, onEdit, onDele
             color: isPercentage ? 'blue' : 'gray',
             cursor: 'pointer',
           }}
-          onClick={() => setIsPercentage((prev) => !prev)}
+          onClick={handlePercentageToggle}
         >
           %
         </span>

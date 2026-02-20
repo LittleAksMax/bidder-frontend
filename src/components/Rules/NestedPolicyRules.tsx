@@ -1,4 +1,4 @@
-import { FC, useEffect } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useEditorState, useEditorDispatch } from './EditorContext';
 import Slot from './Slot';
 import { areAllSlotsFilled } from './treeUtils';
@@ -7,10 +7,15 @@ import { RuleNode } from '../../api/types';
 
 interface NestedPolicyRulesProps {
   onSlotsFilledChange: (filled: boolean) => void;
+  onRuleChange: Dispatch<SetStateAction<RuleNode | null>>;
   rule: RuleNode | null;
 }
 
-export const NestedPolicyRules: FC<NestedPolicyRulesProps> = ({ onSlotsFilledChange, rule }) => {
+export const NestedPolicyRules: FC<NestedPolicyRulesProps> = ({
+  onSlotsFilledChange,
+  onRuleChange,
+  rule,
+}) => {
   const { root } = useEditorState();
   const dispatch = useEditorDispatch(); // Use dispatch to update state
 
@@ -23,6 +28,7 @@ export const NestedPolicyRules: FC<NestedPolicyRulesProps> = ({ onSlotsFilledCha
 
   useEffect(() => {
     onSlotsFilledChange(areAllSlotsFilled(root));
+    onRuleChange(root);
   }, [root, onSlotsFilledChange]);
 
   return (

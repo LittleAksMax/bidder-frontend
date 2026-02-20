@@ -1,28 +1,33 @@
 import { FC, useState } from 'react';
 import Modal from '../Modal';
-import { Marketplace, MARKETPLACES, RULE_TYPES, RuleType } from '../../api/types';
+import { Marketplace, MARKETPLACES, Policy, RULE_TYPES, RuleNode, RuleType } from '../../api/types';
 import NestedPolicyRules from '../Rules/NestedPolicyRules';
-import { useNavigate } from 'react-router-dom';
 import { EditorProvider } from '../Rules/EditorContext';
 import './CreatePolicyModal.css';
 import HelpButton from './HelpButton';
 
 interface CreatePolicyModalProps {
   show: boolean;
+  handleCreate: (p: Policy) => Promise<boolean>;
   onClose: () => void;
 }
 
-const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, onClose }) => {
+const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onClose }) => {
   const [policyName, setPolicyName] = useState<string>('');
   const [ruleType, setRuleType] = useState<RuleType>('nested');
   const [marketplace, setMarketplace] = useState<Marketplace>('UK');
   const [allSlotsFilled, setAllSlotsFilled] = useState<boolean>(false);
+  const [rules, setRules] = useState<RuleNode | null>(null);
 
   let RuleComponent = null;
   if (ruleType === RULE_TYPES[0]?.value) {
     RuleComponent = (
       <EditorProvider>
-        <NestedPolicyRules onSlotsFilledChange={setAllSlotsFilled} rule={null} />
+        <NestedPolicyRules
+          onSlotsFilledChange={setAllSlotsFilled}
+          onRuleChange={setRules}
+          rule={null}
+        />
       </EditorProvider>
     );
   }
@@ -70,15 +75,23 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, onClose }) => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1rem' }}>
         <button
           style={{
-            backgroundColor: allSlotsFilled ? 'green' : '#a9d3a9',
+            backgroundColor: allSlotsFilled && policyName.trim() ? 'green' : '#a9d3a9',
             color: 'white',
             padding: '0.5rem 1rem',
             border: 'none',
             borderRadius: '4px',
-            cursor: allSlotsFilled ? 'pointer' : 'not-allowed',
+            cursor: allSlotsFilled && policyName.trim() ? 'pointer' : 'not-allowed',
           }}
-          disabled={!allSlotsFilled}
-          onClick={() => console.log('created policy')}
+          disabled={!allSlotsFilled || !rules || !policyName.trim()}
+          onClick={() =>
+            handleCreate({
+              id: null!,
+              name: policyName,
+              marketplace,
+              type: ruleType,
+              rules: rules!,
+            })
+          }
         >
           Create Policy
         </button>

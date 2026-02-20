@@ -34,7 +34,6 @@ export const createApiRequest = async ({
 }: ApiRequestOptions): Promise<SdkResponse<Record<string, any>>> => {
   try {
     const path = config.apiGatewayUrl + endpoint + processArgs(args);
-    console.log(path);
     const response = await fetch(path, {
       method,
       headers: {

@@ -21,18 +21,8 @@ export const ConditionNode: FC<ConditionNodeProps> = ({
   onVariableChange,
   onRangeChange,
 }) => {
-  const [defaultsApplied, setDefaultsApplied] = useState(false); // Track if defaults are applied
-
   const depth = path.length;
   const backgroundColor = gradientColors[Math.min(depth, gradientColors.length - 1)];
-
-  useEffect(() => {
-    if (!defaultsApplied) {
-      const defaults = defaultVariableRanges[node.variable] || { min: 0, max: 100 };
-      onRangeChange({ min: defaults.min, max: defaults.max });
-      setDefaultsApplied(true); // Mark defaults as applied
-    }
-  }, [node.variable, onRangeChange, defaultsApplied]);
 
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMin = Math.max(0, parseInt(e.target.value || '0', 10)); // Default to 0 if empty

@@ -14,10 +14,13 @@ import sampleData from './sampleData.json';
 import { createApiRequest } from './client';
 import { authClient } from './AuthClient';
 
-const getAuthKeyParam = () =>
-  authClient.isAuthenticated() && authClient.getAccessToken()
-    ? { authKey: authClient.getAccessToken()! }
-    : {};
+const getAuthKeyParam = async () => {
+  if (!authClient.isAuthenticated()) {
+    return {};
+  }
+  const token = await authClient.getAccessToken();
+  return token ? { authKey: token } : {};
+};
 
 class ApiClient {
   private cachedPolicies: Policy[] | null = null;
@@ -56,7 +59,7 @@ class ApiClient {
       const [_, data, err] = await createApiRequest({
         method: 'GET',
         endpoint: '/policies',
-        ...getAuthKeyParam(),
+        ...(await getAuthKeyParam()),
       });
       if (err) {
         return [];
@@ -74,16 +77,40 @@ class ApiClient {
     type: RuleType,
     marketplace: Marketplace,
     rules: RuleNode,
-  ): Promise<Policy> {
+  ): Promise<Policy | null> {
     console.log('[apiClient] createPolicy called with:', { name, type, marketplace, rules });
-    // This only returns a new policy object, does not persist to JSON
-    return {
-      id: Math.floor(Math.random() * 10000).toString(16),
-      name,
-      type,
-      marketplace,
-      rules,
+
+    const [succ, data, err] = await createApiRequest({
+      method: 'POST',
+      endpoint: '/policies',
+      ...(await getAuthKeyParam()),
+      body: {
+        name,
+        marketplace,
+        type,
+        rules,
+      },
+    });
+
+    if (err || !succ || !data) {
+      return null;
+    }
+
+    // Create policy object from response
+    const realPolicy = {
+      id: data.id,
+      name: data.name,
+      marketplace: data.marketplace,
+      type: data.type,
+      rules: data.rules,
     };
+
+    // Add to cache only after successful creation
+    if (this.cachedPolicies) {
+      this.cachedPolicies.push(realPolicy);
+    }
+
+    return realPolicy;
   }
 
   async getPolicyByID(policyID: string): Promise<Policy | null> {
@@ -91,11 +118,48 @@ class ApiClient {
     return policies.find((policy) => policy.id === policyID) || null;
   }
 
+  async updatePolicy(policyID: string, name: string, rules: RuleNode): Promise<Policy | null> {
+    console.log('[apiClient] updatePolicy called with:', { policyID, name, rules });
+
+    const [succ, data, err] = await createApiRequest({
+      method: 'PUT',
+      endpoint: `/policies/${policyID}`,
+      ...(await getAuthKeyParam()),
+      body: {
+        name,
+        rules,
+      },
+    });
+
+    if (err || !succ || !data) {
+      return null;
+    }
+
+    // Create updated policy object from response
+    const updatedPolicy = {
+      id: data.id,
+      name: data.name,
+      marketplace: data.marketplace,
+      type: data.type,
+      rules: data.rules,
+    };
+
+    // Update in cache if it exists
+    if (this.cachedPolicies) {
+      const index = this.cachedPolicies.findIndex((p) => p.id === policyID);
+      if (index !== -1) {
+        this.cachedPolicies[index] = updatedPolicy;
+      }
+    }
+
+    return updatedPolicy;
+  }
+
   async deletePolicyByID(policyID: string): Promise<boolean> {
     const [succ, _, err] = await createApiRequest({
       method: 'DELETE',
       endpoint: `/policies/${policyID}`,
-      ...getAuthKeyParam(),
+      ...(await getAuthKeyParam()),
     });
     if (err) {
       return false;
