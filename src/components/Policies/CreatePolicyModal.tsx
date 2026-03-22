@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import Modal from '../Modal';
-import { Marketplace, MARKETPLACES, Policy, RULE_TYPES, RuleNode, RuleType } from '../../api/types';
+import { Policy, RULE_TYPES, RuleNode, RuleType } from '../../api/types';
 import NestedPolicyRules from '../Rules/NestedPolicyRules';
 import { EditorProvider } from '../Rules/EditorContext';
 import './CreatePolicyModal.css';
@@ -15,7 +15,7 @@ interface CreatePolicyModalProps {
 const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onClose }) => {
   const [policyName, setPolicyName] = useState<string>('');
   const [ruleType, setRuleType] = useState<RuleType>('nested');
-  const [marketplace, setMarketplace] = useState<Marketplace>('UK');
+  const [marketplace, setMarketplace] = useState<string>('UK');
   const [allSlotsFilled, setAllSlotsFilled] = useState<boolean>(false);
   const [rules, setRules] = useState<RuleNode | null>(null);
 
@@ -49,10 +49,10 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
           </select>
           <select
             value={marketplace}
-            onChange={(e) => setMarketplace(e.target.value as Marketplace)}
+            onChange={(e) => setMarketplace(e.target.value)}
             className="dropdown"
           >
-            {MARKETPLACES.map((mp) => (
+            {['EU'].map((mp) => (
               <option key={mp} value={mp}>
                 {mp}
               </option>

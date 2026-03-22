@@ -1,14 +1,15 @@
 import {
+  Profile,
   Campaign,
   Adgroup,
-  Product,
   Policy,
   ChangeLogEntry,
   ChangeLogResult,
   ChangeLogQuery,
   RuleNode,
-  Marketplace,
   RuleType,
+  ProfileGroup,
+  CampaignGroup,
 } from './types';
 import sampleData from './sampleData.json';
 import { createApiRequest } from './client';
@@ -24,35 +25,118 @@ const getAuthKeyParam = async () => {
 
 class ApiClient {
   private cachedPolicies: Policy[] | null = null;
+  private cachedProfiles: ProfileGroup[] | null = null;
+  private cachedCampaigns: Record<string, Record<number, CampaignGroup>> = {
+    EU: {},
+    US: {},
+    FE: {},
+  };
 
-  async getActiveMarketplaces(): Promise<string[]> {
-    // Hardcoded for now
-    return ['UK', 'US', 'DE', 'ES', 'IT'];
-  }
+  async getActiveSellers(): Promise<string[]> {
+    if (!this.cachedProfiles) {
+      const [succ, data, err] = await createApiRequest({
+        endpoint: '/user/profiles',
+        method: 'GET',
+        ...(await getAuthKeyParam()),
+      });
+      if (err || !succ) {
+        console.error(err);
+        return [];
+      }
 
-  async getCampaigns(): Promise<Campaign[]> {
-    console.log('[apiClient] getCampaigns called');
-    return sampleData.campaigns as Campaign[];
-  }
-
-  async getAdgroups(campaignId: number): Promise<Adgroup[]> {
-    console.log('[apiClient] getAdgroups called with campaignId:', campaignId);
-    const campaigns = await this.getCampaigns();
-    const campaign = campaigns.find((c) => c.id === campaignId);
-    return campaign ? campaign.adgroups : [];
-  }
-
-  async getProducts(adgroupId: number): Promise<Product[]> {
-    console.log('[apiClient] getProducts called with adgroupId:', adgroupId);
-    const campaigns = await this.getCampaigns();
-    for (const campaign of campaigns) {
-      const adgroup = campaign.adgroups.find((a) => a.id === adgroupId);
-      if (adgroup) return adgroup.products;
+      this.cachedProfiles = (data as any[]).map((seller) => ({
+        id: seller.id,
+        name: seller.name,
+        profiles: (seller.profiles as any[]).map((p) => ({
+          profileId: p.profile_id,
+          countryCode: p.country_code,
+          region: p.region,
+          accountId: p.account_id,
+          accountName: p.account_name,
+          accountType: p.account_type,
+        })),
+      }));
     }
+
+    return this.cachedProfiles.map((x) => x.name);
+  }
+
+  async getSellerProfiles(): Promise<ProfileGroup[]> {
+    await this.getActiveSellers();
+    return this.cachedProfiles ?? [];
+  }
+
+  async getProfilesForSeller(sellerName: string): Promise<Profile[]> {
+    await this.getActiveSellers();
+    if (!this.cachedProfiles) {
+      console.error('Something went wrong while fetching seller profiles');
+      return [];
+    }
+    const sellerProfiles = this.cachedProfiles.filter((seller) => seller.name == sellerName);
+    if (sellerProfiles.length !== 1) {
+      console.error('No profile found for seller');
+      return [];
+    }
+    return sellerProfiles[0]!.profiles;
+  }
+
+  async getCampaigns(region: string, profileId: number): Promise<Campaign[]> {
+    const regionCache = this.cachedCampaigns[region];
+    if (regionCache && regionCache[profileId]) {
+      return regionCache[profileId].campaigns;
+    }
+
+    const [succ, data, err] = await createApiRequest({
+      endpoint: `/user/profiles/${region}/${profileId}/campaigns`,
+      method: 'GET',
+      ...(await getAuthKeyParam()),
+    });
+
+    if (err || !succ || !data) {
+      console.error(err);
+      return [];
+    }
+
+    const campaigns: Campaign[] = (data as any[]).map((c) => ({
+      id: c.id,
+      name: c.name,
+      policyId: c.policy_id ?? c.policyId ?? null,
+      marketplace: c.marketplace,
+      adgroups: ((c.adgroups as any[]) || []).map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        defaultBid: a.default_bid ?? a.defaultBid,
+        currencyCode: a.currency_code ?? a.currencyCode,
+      })),
+    }));
+
+    const group: CampaignGroup = {
+      profileId,
+      region,
+      campaigns,
+    };
+
+    if (!this.cachedCampaigns[region]) {
+      this.cachedCampaigns[region] = {};
+    }
+    this.cachedCampaigns[region][profileId] = group;
+
+    console.log(group);
+    return group.campaigns;
+  }
+
+  getAdgroups(campaignId: number): Adgroup[] {
+    for (const region of Object.values(this.cachedCampaigns)) {
+      for (const group of Object.values(region)) {
+        const campaign = group.campaigns.find((c) => c.id === campaignId);
+        if (campaign) return campaign.adgroups;
+      }
+    }
+    console.error('[apiClient] getAdgroups: campaign not found in cache for id:', campaignId);
     return [];
   }
 
-  async getPolicies(marketplace?: Marketplace): Promise<Policy[]> {
+  async getPolicies(): Promise<Policy[]> {
     console.log('[apiClient] getPolicies called');
 
     if (!this.cachedPolicies) {
@@ -75,7 +159,7 @@ class ApiClient {
   async createPolicy(
     name: string,
     type: RuleType,
-    marketplace: Marketplace,
+    marketplace: string,
     rules: RuleNode,
   ): Promise<Policy | null> {
     console.log('[apiClient] createPolicy called with:', { name, type, marketplace, rules });
@@ -177,6 +261,33 @@ class ApiClient {
     const startIdx = (page - 1) * pageSize;
     const entries = all.slice(startIdx, startIdx + pageSize);
     return { entries, total };
+  }
+
+  async getRedirectUrl(region: string): Promise<string | null> {
+    console.log('[apiClient] getRedirectUrl called with region:', region);
+
+    if (region != 'EU' && region != 'US' && region != 'FE') {
+      console.error('Invalid region', region);
+      return null;
+    }
+
+    const [succ, data, err] = await createApiRequest({
+      method: 'GET',
+      endpoint: `/lwa/${region}`,
+      args: {
+        redirect_uri: window.location.origin,
+      },
+      ...(await getAuthKeyParam()),
+    });
+    if (err || !succ) {
+      return null;
+    }
+    if (!data) {
+      return null;
+    }
+
+    const redirectUrl = data.redirectUrl ?? null;
+    return redirectUrl;
   }
 }
 

@@ -7,7 +7,7 @@ import './policy-modal.css';
 interface AssignPolicyModalProps {
   show: boolean;
   onHide: () => void;
-  onAssign: (policyId: number) => void;
+  onAssign: (policyId: string) => void;
   campaignMarketplace: string; // Add marketplace prop
 }
 

@@ -1,11 +1,11 @@
 import { FC } from 'react';
-import { Marketplace, RuleType } from '../../api/types';
+import { RuleType } from '../../api/types';
 
 interface PolicyInputsProps {
   policyName: string;
   onPolicyNameChange: (name: string) => void;
   ruleType: RuleType;
-  marketplace: Marketplace;
+  marketplace: string;
   isEditable: boolean;
 }
 

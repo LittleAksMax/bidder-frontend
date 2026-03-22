@@ -19,31 +19,38 @@ const VIEW_CHANGE_LOG_FONT_SIZE = '1em'; // Adjust as needed
 
 interface CampaignsListProps {
   selectedMarketplace: string | null;
+  region: string | null;
+  profileId: number | null;
 }
 
-const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
+const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace, region, profileId }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [expanded, setExpanded] = useState<number[]>([]);
   const [showAssignModal, setShowAssignModal] = useState<number | null>(null);
   const [showChangeLog, setShowChangeLog] = useState<number | null>(null);
-  const [policies, setPolicies] = useState<Record<number, Policy>>({});
+  const [policies, setPolicies] = useState<Record<string, Policy>>({});
 
   useEffect(() => {
-    apiClient.getCampaigns().then((data) => {
-      setCampaigns(data);
-      setExpanded(data.map((c) => c.id)); // Expand all campaigns by default
-    });
-  }, []);
+    if (region && profileId !== null) {
+      apiClient.getCampaigns(region, profileId).then((data) => {
+        setCampaigns(data);
+        setExpanded(data.map((c) => c.id));
+      });
+    } else {
+      setCampaigns([]);
+      setExpanded([]);
+    }
+  }, [region, profileId]);
 
   useEffect(() => {
     if (campaigns.length > 0) {
       const fetchPolicies = async () => {
-        const policyMap: Record<number, Policy> = {};
+        const policyMap: Record<string, Policy> = {};
         for (const campaign of campaigns) {
           if (campaign.policyId) {
-            const policy = await apiClient.getPolicyByID(campaign.policyId);
+            const policy = await apiClient.getPolicyByID(campaign.policyId!);
             if (policy) {
-              policyMap[campaign.policyId] = policy;
+              policyMap[campaign.policyId!] = policy;
             }
           }
         }
@@ -54,9 +61,7 @@ const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
     }
   }, [campaigns]);
 
-  const filteredCampaigns = selectedMarketplace
-    ? campaigns.filter((c) => c.marketplace === selectedMarketplace)
-    : campaigns;
+  const filteredCampaigns = campaigns;
 
   const handleToggle = (id: number) => {
     setExpanded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -135,12 +140,10 @@ const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace }) => {
             <AssignPolicyModal
               show={showAssignModal === campaign.id}
               onHide={() => setShowAssignModal(null)}
-              onAssign={(policyId: number) => {
+              onAssign={(policyId: string) => {
                 setShowAssignModal(null);
                 setCampaigns((prevCampaigns) =>
-                  prevCampaigns.map((campaign) =>
-                    campaign.id === campaign.id ? { ...campaign, policyId } : campaign,
-                  ),
+                  prevCampaigns.map((c) => (c.id === campaign.id ? { ...c, policyId } : c)),
                 );
               }}
               campaignMarketplace={campaign.marketplace} // Pass marketplace for filtering

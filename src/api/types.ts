@@ -10,24 +10,40 @@ export interface TokenPair {
   refreshToken: string;
 }
 
-export type Product = {
-  id: number;
-  sku: string;
-  name: string;
-};
-
 export type Adgroup = {
   id: number;
   name: string;
-  products: Product[];
+  defaultBid: number;
+  currencyCode: string;
+};
+
+export type CampaignGroup = {
+  profileId: number;
+  region: string;
+  campaigns: Campaign[];
 };
 
 export type Campaign = {
   id: number;
   name: string;
   adgroups: Adgroup[];
-  policyId: number | null;
-  marketplace: Marketplace; // Marketplace code (e.g., 'UK', 'US', etc.)
+  policyId: string | null;
+  marketplace: string; // marketplace code (e.g., 'UK', 'US', etc.)
+};
+
+export type ProfileGroup = {
+  id: string;
+  name: string;
+  profiles: Profile[];
+};
+
+export type Profile = {
+  profileId: number;
+  countryCode: string;
+  region: string;
+  accountId: string;
+  accountName: string;
+  accountType: string;
 };
 
 export type ChangeLogEntry = {
@@ -93,7 +109,7 @@ export type Policy = {
   id: string;
   name: string;
   type: RuleType;
-  marketplace: Marketplace;
+  marketplace: string;
   rules: RuleNode;
 };
 
@@ -113,6 +129,3 @@ export type ChangeLogResult = {
   entries: ChangeLogEntry[];
   total: number;
 };
-
-export const MARKETPLACES = ['US', 'CA', 'MX', 'UK', 'DE', 'FR', 'IT', 'ES'] as const;
-export type Marketplace = (typeof MARKETPLACES)[number];
