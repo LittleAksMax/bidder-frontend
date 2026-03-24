@@ -8,6 +8,7 @@ import {
   RuleType,
   ProfileGroup,
   CampaignGroup,
+  AttachedPolicyDTO,
 } from './types';
 import { createApiRequest } from './client';
 import { authClient } from './AuthClient';
@@ -30,6 +31,59 @@ class ApiClient {
     US: {},
     FE: {},
   };
+
+  private clearCampaignCache(): void {
+    this.cachedCampaigns = {
+      EU: {},
+      US: {},
+      FE: {},
+    };
+  }
+
+  private normaliseId(value: unknown): string {
+    const normalised = String(value ?? '').trim();
+    if (!normalised) {
+      return '';
+    }
+
+    const lowerValue = normalised.toLowerCase();
+    if (lowerValue === 'null' || lowerValue === 'undefined' || normalised === '0') {
+      return '';
+    }
+
+    return normalised;
+  }
+
+  private parseAttachedPolicies(data: any[]): AttachedPolicyDTO[] {
+    return data
+      .map((item) => ({
+        campaignId: this.normaliseId(item.campaign_id ?? item.campaignId),
+        adgroupId: this.normaliseId(item.adgroup_id ?? item.adgroupId),
+        policyId: this.normaliseId(item.policy_id ?? item.policyId),
+        isLive: Boolean(item.is_live ?? item.isLive ?? false),
+      }))
+      .filter(
+        (item) =>
+          item.policyId.length > 0 && (item.campaignId.length > 0 || item.adgroupId.length > 0),
+      );
+  }
+
+  async getAttachedPolicies(profileId: number): Promise<AttachedPolicyDTO[]> {
+    const [succ, data, err] = await createApiRequest({
+      endpoint: `/user/attach/${profileId}`,
+      method: 'GET',
+      ...(await getAuthKeyParam()),
+    });
+
+    if (err || !succ || !data) {
+      if (err) {
+        console.error('[apiClient] Failed to fetch attached policies', err);
+      }
+      return [];
+    }
+
+    return this.parseAttachedPolicies(data as any[]);
+  }
 
   async getActiveSellers(): Promise<string[]> {
     if (!this.cachedProfiles) {
@@ -85,6 +139,7 @@ class ApiClient {
       return regionCache[profileId].campaigns;
     }
 
+    const attachedPoliciesPromise = this.getAttachedPolicies(profileId);
     const [succ, data, err] = await createApiRequest({
       endpoint: `/user/profiles/${region}/${profileId}/campaigns`,
       method: 'GET',
@@ -96,33 +151,73 @@ class ApiClient {
       return [];
     }
 
+    const attachedPolicies = await attachedPoliciesPromise;
+    const attachmentByAdgroupId = new Map<string, { policyId: string; isLive: boolean }>();
+    const attachmentByCampaignId = new Map<string, { policyId: string; isLive: boolean }>();
+
+    attachedPolicies.forEach((attachment) => {
+      if (attachment.adgroupId.length > 0) {
+        attachmentByAdgroupId.set(attachment.adgroupId, {
+          policyId: attachment.policyId,
+          isLive: attachment.isLive,
+        });
+      } else if (attachment.campaignId.length > 0) {
+        attachmentByCampaignId.set(attachment.campaignId, {
+          policyId: attachment.policyId,
+          isLive: attachment.isLive,
+        });
+      }
+    });
+
     const campaigns: Campaign[] = (data as any[]).map((c) => {
       const campaignPolicyId = (c.policy_id ?? c.policyId ?? null) as string | null;
       const campaignIsPolicyLive = (c.policy_is_live ??
         c.policyIsLive ??
         campaignPolicyId !== null) as boolean;
+      const campaignAttachment = attachmentByCampaignId.get(String(c.id));
+
+      const adgroups: Adgroup[] = ((c.adgroups as any[]) || []).map((a: any) => {
+        const adgroupPolicyId = (a.policy_id ?? a.policyId ?? campaignPolicyId ?? null) as
+          | string
+          | null;
+        const adgroupAttachment = attachmentByAdgroupId.get(String(a.id));
+        const resolvedPolicyId =
+          adgroupAttachment?.policyId ?? campaignAttachment?.policyId ?? adgroupPolicyId;
+        const resolvedIsLive =
+          adgroupAttachment?.isLive ??
+          campaignAttachment?.isLive ??
+          ((a.policy_is_live ??
+            a.policyIsLive ??
+            (resolvedPolicyId !== null ? campaignIsPolicyLive : false)) as boolean);
+
+        return {
+          id: a.id,
+          name: a.name,
+          defaultBid: a.default_bid ?? a.defaultBid,
+          currencyCode: a.currency_code ?? a.currencyCode,
+          policyId: resolvedPolicyId,
+          isPolicyLive: resolvedIsLive,
+        };
+      });
+
+      const nonNullAdgroupPolicyIds = adgroups
+        .map((adgroup) => adgroup.policyId)
+        .filter((policyId): policyId is string => policyId !== null);
+      const uniqueAdgroupPolicyIds = new Set(nonNullAdgroupPolicyIds);
+      const derivedCampaignPolicyId =
+        uniqueAdgroupPolicyIds.size === 1 ? (nonNullAdgroupPolicyIds[0] ?? null) : null;
+      const derivedCampaignIsLive =
+        adgroups.length > 0
+          ? adgroups.every((adgroup) => adgroup.isPolicyLive)
+          : (campaignAttachment?.isLive ?? campaignIsPolicyLive);
 
       return {
         id: c.id,
         name: c.name,
-        policyId: campaignPolicyId,
-        isPolicyLive: campaignIsPolicyLive,
+        policyId: campaignAttachment?.policyId ?? derivedCampaignPolicyId ?? campaignPolicyId,
+        isPolicyLive: derivedCampaignIsLive,
         marketplace: c.marketplace,
-        adgroups: ((c.adgroups as any[]) || []).map((a: any) => {
-          const adgroupPolicyId = (a.policy_id ?? a.policyId ?? campaignPolicyId ?? null) as
-            | string
-            | null;
-          return {
-            id: a.id,
-            name: a.name,
-            defaultBid: a.default_bid ?? a.defaultBid,
-            currencyCode: a.currency_code ?? a.currencyCode,
-            policyId: adgroupPolicyId,
-            isPolicyLive: (a.policy_is_live ??
-              a.policyIsLive ??
-              (adgroupPolicyId !== null ? campaignIsPolicyLive : false)) as boolean,
-          };
-        }),
+        adgroups,
       };
     });
 
@@ -300,6 +395,7 @@ class ApiClient {
       return false;
     }
 
+    this.clearCampaignCache();
     return true;
   }
 
@@ -316,6 +412,7 @@ class ApiClient {
       return false;
     }
 
+    this.clearCampaignCache();
     return true;
   }
 

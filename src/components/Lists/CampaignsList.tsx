@@ -18,6 +18,7 @@ interface CampaignsListProps {
   region: string | null;
   sellerId: string | null;
   profile: Profile | null;
+  selectionPending: boolean;
 }
 
 type ChangeLogContext = {
@@ -41,7 +42,7 @@ type AssignPolicyContext =
 
 const defaultProfileFields = { profileId: null, countryCode: '' };
 
-const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile }) => {
+const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, selectionPending }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [expanded, setExpanded] = useState<number[]>([]);
   const [assignPolicyContext, setAssignPolicyContext] = useState<AssignPolicyContext | null>(null);
@@ -52,49 +53,76 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile }) =>
   const { profileId, countryCode } = profile ?? defaultProfileFields;
 
   useEffect(() => {
+    let isCancelled = false;
+
     if (region && profileId) {
-      apiClient.getCampaigns(region, profileId).then((data) => {
-        setCampaigns(data);
-        setExpanded([]);
-      });
+      setLoading(true);
+      void apiClient
+        .getCampaigns(region, profileId)
+        .then((data) => {
+          if (isCancelled) {
+            return;
+          }
+          setCampaigns(data);
+          setExpanded([]);
+        })
+        .finally(() => {
+          if (!isCancelled) {
+            setLoading(false);
+          }
+        });
     } else {
       setCampaigns([]);
       setExpanded([]);
+      setPolicies({});
+      setLoading(false);
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [region, profileId]);
 
   useEffect(() => {
-    setLoading(true);
+    let isCancelled = false;
+
     if (campaigns.length === 0) {
       setPolicies({});
-    } else {
-      const fetchPolicies = async () => {
-        const policyMap: Record<string, Policy> = {};
-        const policyIds = new Set<string>();
-
-        campaigns.forEach((campaign) => {
-          if (campaign.policyId) {
-            policyIds.add(campaign.policyId);
-          }
-          campaign.adgroups.forEach((adgroup) => {
-            if (adgroup.policyId) {
-              policyIds.add(adgroup.policyId);
-            }
-          });
-        });
-
-        for (const policyId of policyIds) {
-          const policy = await apiClient.getPolicyByID(policyId);
-          if (policy) {
-            policyMap[policyId] = policy;
-          }
-        }
-        setPolicies(policyMap);
-      };
-
-      void fetchPolicies();
+      return;
     }
-    setLoading(false);
+
+    const fetchPolicies = async () => {
+      const policyMap: Record<string, Policy> = {};
+      const policyIds = new Set<string>();
+
+      campaigns.forEach((campaign) => {
+        if (campaign.policyId) {
+          policyIds.add(campaign.policyId);
+        }
+        campaign.adgroups.forEach((adgroup) => {
+          if (adgroup.policyId) {
+            policyIds.add(adgroup.policyId);
+          }
+        });
+      });
+
+      for (const policyId of policyIds) {
+        const policy = await apiClient.getPolicyByID(policyId);
+        if (policy) {
+          policyMap[policyId] = policy;
+        }
+      }
+
+      if (!isCancelled) {
+        setPolicies(policyMap);
+      }
+    };
+
+    void fetchPolicies();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [campaigns]);
 
   const filteredCampaigns = campaigns;
@@ -274,17 +302,21 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile }) =>
 
   const hasSellerAndProfile = sellerId !== null && profileId !== null;
 
-  return loading ? (
+  return loading || selectionPending ? (
     <div className="d-flex justify-content-center align-items-center assign-policy-loading">
       <Spinner animation="border" />
     </div>
   ) : (
     <>
       <ListGroup>
+        {filteredCampaigns.length === 0 && <p>No enabled campaigns in this configuration.</p>}
         {filteredCampaigns.map((campaign) => {
-          const campaignHasAnyPolicy = campaign.adgroups.some((adgroup) => adgroup.policyId !== null);
+          const campaignHasAnyPolicy = campaign.adgroups.some(
+            (adgroup) => adgroup.policyId !== null,
+          );
           const areAllAdgroupsLive =
-            campaign.adgroups.length > 0 && campaign.adgroups.every((adgroup) => adgroup.isPolicyLive);
+            campaign.adgroups.length > 0 &&
+            campaign.adgroups.every((adgroup) => adgroup.isPolicyLive);
 
           return (
             <CampaignsListItem key={campaign.id}>

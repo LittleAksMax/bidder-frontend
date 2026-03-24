@@ -21,7 +21,7 @@ const Home: FC = () => {
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [sellersLoaded, setSellersLoaded] = useState(false);
-  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
+  const [hasInitialisedSelection, setHasInitialisedSelection] = useState(false);
 
   useEffect(() => {
     apiClient.getSellerProfiles().then((s) => {
@@ -51,11 +51,11 @@ const Home: FC = () => {
       setMarketplaces([]);
       setSelectedMarketplace(null);
     }
-    setHasInitializedSelection(true);
+    setHasInitialisedSelection(true);
   }, [selectedSeller, sellersLoaded]);
 
   useEffect(() => {
-    if (!hasInitializedSelection) {
+    if (!hasInitialisedSelection) {
       return;
     }
 
@@ -64,10 +64,10 @@ const Home: FC = () => {
       return;
     }
     window.localStorage.removeItem(STORAGE_KEYS.sellerId);
-  }, [selectedSeller, hasInitializedSelection]);
+  }, [selectedSeller, hasInitialisedSelection]);
 
   useEffect(() => {
-    if (!hasInitializedSelection) {
+    if (!hasInitialisedSelection) {
       return;
     }
 
@@ -76,10 +76,12 @@ const Home: FC = () => {
       return;
     }
     window.localStorage.removeItem(STORAGE_KEYS.marketplace);
-  }, [selectedMarketplace, hasInitializedSelection]);
+  }, [selectedMarketplace, hasInitialisedSelection]);
 
   const selectedProfile =
     selectedSeller?.profiles.find((p) => p.countryCode === selectedMarketplace) ?? null;
+  const selectionPending =
+    selectedSeller !== null && selectedSeller.profiles.length > 0 && selectedProfile === null;
   const changeLogScope: ChangeLogScope = selectedProfile ? 'profile' : 'seller';
 
   return (
@@ -134,6 +136,7 @@ const Home: FC = () => {
         region={selectedProfile?.region ?? null}
         sellerId={selectedSeller?.id ?? null}
         profile={selectedProfile}
+        selectionPending={selectionPending}
       />
       <ChangeLogModal
         show={showChangeLog}

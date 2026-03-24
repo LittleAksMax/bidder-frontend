@@ -19,7 +19,7 @@ export const NestedPolicyRules: FC<NestedPolicyRulesProps> = ({
   const { root } = useEditorState();
   const dispatch = useEditorDispatch(); // Use dispatch to update state
 
-  // Initialize the editor state with the passed rule
+  // Initialise the editor state with the passed rule
   useEffect(() => {
     if (rule) {
       dispatch({ type: 'set_root', root: rule }); // Dispatch set_root action

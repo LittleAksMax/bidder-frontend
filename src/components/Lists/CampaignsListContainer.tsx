@@ -8,15 +8,26 @@ interface CampaignsListContainerProps {
   region: string | null;
   sellerId: string | null;
   profile: Profile | null;
+  selectionPending: boolean;
 }
 
-const CampaignsListContainer: FC<CampaignsListContainerProps> = ({ region, sellerId, profile }) => (
+const CampaignsListContainer: FC<CampaignsListContainerProps> = ({
+  region,
+  sellerId,
+  profile,
+  selectionPending,
+}) => (
   <Card className="campaigns-list-container-card">
     <Card.Header className="bg-primary text-white">
       <h2 className="mb-0">Campaigns</h2>
     </Card.Header>
     <Card.Body className="campaigns-list-container-body">
-      <CampaignsList region={region} sellerId={sellerId} profile={profile} />
+      <CampaignsList
+        region={region}
+        sellerId={sellerId}
+        profile={profile}
+        selectionPending={selectionPending}
+      />
     </Card.Body>
   </Card>
 );

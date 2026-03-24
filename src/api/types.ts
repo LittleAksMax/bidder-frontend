@@ -49,6 +49,13 @@ export type Profile = {
   accountType: string;
 };
 
+export type AttachedPolicyDTO = {
+  campaignId: string;
+  adgroupId: string;
+  policyId: string;
+  isLive: boolean;
+};
+
 export type ChangeLogEntry = {
   profileId: number;
   campaignId: string;
