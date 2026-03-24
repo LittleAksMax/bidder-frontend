@@ -19,6 +19,8 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
   const [allSlotsFilled, setAllSlotsFilled] = useState<boolean>(false);
   const [rules, setRules] = useState<RuleNode | null>(null);
 
+  const isCreateEnabled = allSlotsFilled && Boolean(rules) && Boolean(policyName.trim());
+
   let RuleComponent = null;
   if (ruleType === RULE_TYPES[0]?.value) {
     RuleComponent = (
@@ -72,17 +74,10 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
         </button>
       </div>
       <div className="modal-body">{RuleComponent}</div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1rem' }}>
+      <div className="policy-modal-footer">
         <button
-          style={{
-            backgroundColor: allSlotsFilled && policyName.trim() ? 'green' : '#a9d3a9',
-            color: 'white',
-            padding: '0.5rem 1rem',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: allSlotsFilled && policyName.trim() ? 'pointer' : 'not-allowed',
-          }}
-          disabled={!allSlotsFilled || !rules || !policyName.trim()}
+          className={`policy-modal-submit-btn ${isCreateEnabled ? 'is-enabled' : 'is-disabled'}`}
+          disabled={!isCreateEnabled}
           onClick={() =>
             handleCreate({
               id: null!,

@@ -1,12 +1,19 @@
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { Modal, Button, Table, Form } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { ChangeLogEntry, ChangeLogQuery, ChangeLogResult, Adgroup } from '../../api/types';
+import { ChangeLogEntry } from '../../api/types';
+import './ChangeLogModal.css';
+
+export type ChangeLogScope = 'seller' | 'profile' | 'campaign' | 'adgroup';
 
 interface ChangeLogModalProps {
   show: boolean;
   onHide: () => void;
-  adgroups: Adgroup[];
+  scope: ChangeLogScope;
+  sellerId: string | null;
+  profileId: number | null;
+  campaignId?: number | null;
+  adgroupId?: number | null;
 }
 
 const getColor = (oldPrice: number, newPrice: number) => {
@@ -21,32 +28,85 @@ const getPrefix = (oldPrice: number, newPrice: number) => {
   return '';
 };
 
-const ChangeLogModal: FC<ChangeLogModalProps> = ({ show, onHide, adgroups }) => {
+const getTitle = (scope: ChangeLogScope): string => {
+  if (scope === 'seller') return 'Seller Change Log';
+  if (scope === 'profile') return 'Profile Change Log';
+  if (scope === 'campaign') return 'Campaign Change Log';
+  return 'Ad Group Change Log';
+};
+
+const ChangeLogModal: FC<ChangeLogModalProps> = ({
+  show,
+  onHide,
+  scope,
+  sellerId,
+  profileId,
+  campaignId,
+  adgroupId,
+}) => {
   const [logs, setLogs] = useState<ChangeLogEntry[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(25); // Use 25 as a middle ground between 20 and 30
   const [days, setDays] = useState(30);
-  const endTime = new Date().toISOString();
-  const startTime = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const pageSize = 25;
 
   useEffect(() => {
     if (!show) return;
-    const fetchLogs = async () => {
-      // Collect all product IDs from all adgroups
-      const productIds = adgroups.flatMap((a) => a.products.map((p) => p.id));
-      const query: ChangeLogQuery = { startTime, endTime, page, pageSize };
-      const result: ChangeLogResult = await apiClient.getChangeLogs(query);
-      // Filter logs to only those for products in these adgroups
-      const filtered = result.entries.filter((e) => productIds.includes(e.product_id));
-      setLogs(filtered);
-      setTotal(filtered.length);
-    };
-    fetchLogs();
-    // eslint-disable-next-line
-  }, [show, days, page, adgroups]);
 
-  const totalPages = Math.ceil(total / pageSize);
+    const fetchLogs = async () => {
+      if (!sellerId) {
+        setLogs([]);
+        return;
+      }
+
+      if (profileId === null) {
+        setLogs([]);
+        return;
+      }
+
+      if (scope === 'profile') {
+        setLogs(await apiClient.getProfileChangeLogs(profileId, days));
+        return;
+      }
+
+      if (campaignId == null) {
+        setLogs([]);
+        return;
+      }
+
+      if (scope === 'campaign') {
+        setLogs(await apiClient.getCampaignChangeLogs(profileId, campaignId, days));
+        return;
+      }
+
+      if (adgroupId == null) {
+        setLogs([]);
+        return;
+      }
+
+      setLogs(await apiClient.getAdgroupChangeLogs(profileId, campaignId, adgroupId, days));
+    };
+
+    void fetchLogs();
+  }, [show, days, scope, profileId, campaignId, adgroupId]);
+
+  useEffect(() => {
+    if (!show) return;
+    setPage(1);
+  }, [show, days, scope, sellerId, profileId, campaignId, adgroupId]);
+
+  const total = logs.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const pagedLogs = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return logs.slice(start, start + pageSize);
+  }, [logs, page]);
 
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -54,7 +114,7 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({ show, onHide, adgroups }) => 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton>
-        <Modal.Title>Change Log</Modal.Title>
+        <Modal.Title>{getTitle(scope)}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <div className="d-flex align-items-center mb-3">
@@ -63,15 +123,18 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({ show, onHide, adgroups }) => 
             type="number"
             min={1}
             value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-            style={{ width: 80 }}
+            onChange={(e) => {
+              const nextValue = Number(e.target.value);
+              setDays(Number.isFinite(nextValue) && nextValue > 0 ? nextValue : 1);
+            }}
+            className="change-log-days-input"
           />
           <span className="ms-2">days</span>
         </div>
         <Table bordered hover size="sm">
           <thead>
             <tr>
-              <th>Product ID</th>
+              <th>Adgroup</th>
               <th>Old Price</th>
               <th>New Price</th>
               <th>Time</th>
@@ -79,23 +142,31 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({ show, onHide, adgroups }) => 
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td>{log.product_id}</td>
-                <td>{log.old_price}</td>
-                <td className={getColor(log.old_price, log.new_price)}>
-                  {getPrefix(log.old_price, log.new_price)}
-                  {log.new_price}
+            {pagedLogs.length > 0 ? (
+              pagedLogs.map((log) => (
+                <tr key={log.timestamp.toString() + log.adgroup.toString()}>
+                  <td>{log.adgroup}</td>
+                  <td>{log.oldPrice}</td>
+                  <td className={getColor(log.oldPrice, log.newPrice)}>
+                    {getPrefix(log.oldPrice, log.newPrice)}
+                    {log.newPrice}
+                  </td>
+                  <td>{new Date(log.timestamp).toLocaleString()}</td>
+                  <td>{log.policyName}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="text-center text-muted">
+                  No change log entries found.
                 </td>
-                <td>{new Date(log.timestamp).toLocaleString()}</td>
-                <td>{log.policy ? log.policy.name : <span className="text-muted">N/A</span>}</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </Table>
         <div className="d-flex justify-content-between align-items-center">
           <div>
-            Page {page} of {totalPages || 1}
+            Page {page} of {totalPages}
           </div>
           <div>
             <Button

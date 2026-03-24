@@ -3,6 +3,7 @@ import { TerminalRuleNode } from '../../api/types';
 import DeleteButton from '../buttons/DeleteButton';
 import { useEditorDispatch } from '../Rules/EditorContext';
 import { ReadonlyPath } from '../Rules/treeUtils';
+import './styles/RuleNodes.css';
 
 interface TerminalNodeProps {
   node: TerminalRuleNode;
@@ -83,69 +84,30 @@ export const TerminalNode: FC<TerminalNodeProps> = ({ node, path, onEdit, onDele
     });
   };
 
-  // Future: Add operation type toggle handler
-  // const handleOpTypeToggle = () => {
-  //   const newOpType = opType === 'add' ? 'mul' : 'add';
-  //   setOpType(newOpType);
-  //   dispatch({
-  //     type: 'update_node',
-  //     path,
-  //     patch: {
-  //       op: {
-  //         type: newOpType,
-  //         amount: {
-  //           neg: isNegative,
-  //           perc: isPercentage,
-  //           amount: amount,
-  //         },
-  //       },
-  //     },
-  //   });
-  // };
-
-  const operationColor = isNegative ? 'red' : 'green';
   const holographicHint = `{= ${isNegative ? '-' : '+'}${amount}${isPercentage ? '%' : ''} }`;
 
   return (
-    <div
-      style={{
-        border: '1px solid #bbb',
-        borderRadius: 8,
-        padding: 12,
-        margin: '0.5rem 0',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="terminal-node">
+      <div className="terminal-node-controls">
         <span
-          style={{
-            color: operationColor,
-            cursor: 'pointer',
-            width: '0.5em',
-          }}
+          className={`terminal-node-sign ${isNegative ? 'terminal-node-sign-negative' : 'terminal-node-sign-positive'}`}
           onClick={handleNegativeToggle}
         >
-          {/* ndash looks similar in width to the + */}
           {isNegative ? <span>&ndash;</span> : '+'}
         </span>
         <input
           type="number"
           value={amount}
           onChange={(e) => handleAmountChange(parseFloat(e.target.value))}
-          style={{ width: 60 }}
+          className="terminal-node-amount-input"
         />
         <span
-          style={{
-            color: isPercentage ? 'blue' : 'gray',
-            cursor: 'pointer',
-          }}
+          className={`terminal-node-percent ${isPercentage ? 'terminal-node-percent-on' : 'terminal-node-percent-off'}`}
           onClick={handlePercentageToggle}
         >
           %
         </span>
-        <code style={{ color: '#aaa', fontStyle: 'italic' }}>{holographicHint}</code>
+        <code className="terminal-node-hint">{holographicHint}</code>
       </div>
       <DeleteButton onClick={() => dispatch({ type: 'set_slot', path, value: null })} />
     </div>

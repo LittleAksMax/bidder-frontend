@@ -15,6 +15,8 @@ export type Adgroup = {
   name: string;
   defaultBid: number;
   currencyCode: string;
+  policyId: string | null;
+  isPolicyLive: boolean;
 };
 
 export type CampaignGroup = {
@@ -28,6 +30,7 @@ export type Campaign = {
   name: string;
   adgroups: Adgroup[];
   policyId: string | null;
+  isPolicyLive: boolean;
   marketplace: string; // marketplace code (e.g., 'UK', 'US', etc.)
 };
 
@@ -47,15 +50,13 @@ export type Profile = {
 };
 
 export type ChangeLogEntry = {
-  id: number;
-  product_id: number;
-  old_price: number;
-  new_price: number;
-  timestamp: string; // ISO string
-  policy?: {
-    id: number;
-    name: string;
-  };
+  profileId: number;
+  campaignId: string;
+  adgroup: string;
+  oldPrice: number;
+  newPrice: number;
+  timestamp: Date;
+  policyName: string;
 };
 
 export const RULE_TYPES = [

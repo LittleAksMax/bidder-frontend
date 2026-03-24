@@ -1,20 +1,22 @@
 import { FC } from 'react';
 import { Card } from 'react-bootstrap';
 import CampaignsList from './CampaignsList';
+import './CampaignsListContainer.css';
+import { Profile } from '../../api/types';
 
 interface CampaignsListContainerProps {
-  selectedMarketplace: string | null;
   region: string | null;
-  profileId: number | null;
+  sellerId: string | null;
+  profile: Profile | null;
 }
 
-const CampaignsListContainer: FC<CampaignsListContainerProps> = ({ selectedMarketplace, region, profileId }) => (
-  <Card style={{ height: '100%', width: '100%' }}>
+const CampaignsListContainer: FC<CampaignsListContainerProps> = ({ region, sellerId, profile }) => (
+  <Card className="campaigns-list-container-card">
     <Card.Header className="bg-primary text-white">
       <h2 className="mb-0">Campaigns</h2>
     </Card.Header>
-    <Card.Body style={{ flex: 1, width: '100%' }}>
-      <CampaignsList selectedMarketplace={selectedMarketplace} region={region} profileId={profileId} />
+    <Card.Body className="campaigns-list-container-body">
+      <CampaignsList region={region} sellerId={sellerId} profile={profile} />
     </Card.Body>
   </Card>
 );

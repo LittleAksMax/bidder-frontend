@@ -80,31 +80,20 @@ const Policies: FC = () => {
   const policyToEdit = policies.find((policy) => policy.id === editPolicyId) || null; // Find policy by ID
   return (
     <Page showSettings>
-      <div className="w-100 d-flex justify-content-end mb-3" style={{ gap: '0.5rem' }}>
+      <div className="w-100 d-flex justify-content-end mb-3 policies-toolbar">
         <Button variant="outline-primary" size="sm" onClick={() => navigate('/')} className="me-2">
           Back To Home
         </Button>
       </div>
-      <Card
-        style={{
-          width: '100%',
-          height: '93%',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <Card className="policies-card">
         <Card.Header
-          className="bg-success text-white d-flex align-items-center"
-          style={{ height: '5%', minHeight: 50 }}
+          className="bg-success text-white d-flex align-items-center policies-header"
         >
           <h2 className="mb-0">Policies</h2>
         </Card.Header>
-        <Card.Body
-          className="p-0 grow d-flex flex-column position-relative"
-          style={{ flex: '1 1 90%', minHeight: 0 }}
-        >
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+        <Card.Body className="p-0 grow d-flex flex-column position-relative policies-body">
+          <div className="policies-body-inner">
+            <div className="policies-list-scroll">
               <PoliciesList policies={policies} onEdit={handleEdit} onDelete={handleDelete} />
             </div>
           </div>
@@ -116,13 +105,8 @@ const Policies: FC = () => {
             onClose={() => setEditPolicyId(null)}
           />
         </Card.Body>
-        <Card.Footer style={{ height: '5%', minHeight: 50 }}>
-          <div
-            className="d-flex justify-content-end align-items-center"
-            style={{
-              background: '#f8f9fa',
-            }}
-          >
+        <Card.Footer className="policies-footer">
+          <div className="d-flex justify-content-end align-items-center policies-footer-actions">
             <CreateButton onClick={() => setShowCreateModal(true)} />
             <CreatePolicyModal
               show={showCreateModal}

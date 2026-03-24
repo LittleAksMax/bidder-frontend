@@ -6,6 +6,7 @@ import { Policy } from '../../api/types';
 import PolicyPill from '../Policies/PolicyPill';
 import MarketplacePill from '../Policies/MarketplacePill';
 import PolicyName from '../Policies/PolicyName';
+import './PoliciesList.css';
 
 interface PoliciesListProps {
   policies: Policy[];
@@ -20,16 +21,15 @@ const PoliciesList: FC<PoliciesListProps> = ({ policies, onEdit, onDelete }) => 
         key={policy.id}
         className="d-flex align-items-center justify-content-between policies-list-item"
       >
-        <div className="d-flex align-items-center" style={{ gap: '1.5rem' }}>
+        <div className="d-flex align-items-center policies-list-content">
           <div className="d-flex flex-column">
-            <div style={{ display: 'flex', alignItems: 'center', fontWeight: 500, gap: '0.5em' }}>
+            <div className="policies-list-header">
               <PolicyName name={policy.name} />
-              <PolicyPill ruleType={policy.type} colour="success" fontSize={18} />
               <MarketplacePill marketplace={policy.marketplace} fontSize={18} />
             </div>
           </div>
         </div>
-        <span className="d-inline-flex" style={{ gap: '0.5rem' }}>
+        <span className="d-inline-flex policies-list-actions">
           <EditButton onClick={() => onEdit(policy.id)} />
           <DeleteButton onClick={() => onDelete(policy.id)} />
         </span>

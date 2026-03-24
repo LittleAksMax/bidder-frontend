@@ -4,14 +4,11 @@ import {
   Adgroup,
   Policy,
   ChangeLogEntry,
-  ChangeLogResult,
-  ChangeLogQuery,
   RuleNode,
   RuleType,
   ProfileGroup,
   CampaignGroup,
 } from './types';
-import sampleData from './sampleData.json';
 import { createApiRequest } from './client';
 import { authClient } from './AuthClient';
 
@@ -23,8 +20,10 @@ const getAuthKeyParam = async () => {
   return token ? { authKey: token } : {};
 };
 
+type PolicyScopeTarget = { campaignId: number } | { adgroupId: number };
+
 class ApiClient {
-  private cachedPolicies: Policy[] | null = null;
+  private cachedPolicyMap: Record<string, Policy> | null = null;
   private cachedProfiles: ProfileGroup[] | null = null;
   private cachedCampaigns: Record<string, Record<number, CampaignGroup>> = {
     EU: {},
@@ -97,18 +96,35 @@ class ApiClient {
       return [];
     }
 
-    const campaigns: Campaign[] = (data as any[]).map((c) => ({
-      id: c.id,
-      name: c.name,
-      policyId: c.policy_id ?? c.policyId ?? null,
-      marketplace: c.marketplace,
-      adgroups: ((c.adgroups as any[]) || []).map((a: any) => ({
-        id: a.id,
-        name: a.name,
-        defaultBid: a.default_bid ?? a.defaultBid,
-        currencyCode: a.currency_code ?? a.currencyCode,
-      })),
-    }));
+    const campaigns: Campaign[] = (data as any[]).map((c) => {
+      const campaignPolicyId = (c.policy_id ?? c.policyId ?? null) as string | null;
+      const campaignIsPolicyLive = (c.policy_is_live ??
+        c.policyIsLive ??
+        campaignPolicyId !== null) as boolean;
+
+      return {
+        id: c.id,
+        name: c.name,
+        policyId: campaignPolicyId,
+        isPolicyLive: campaignIsPolicyLive,
+        marketplace: c.marketplace,
+        adgroups: ((c.adgroups as any[]) || []).map((a: any) => {
+          const adgroupPolicyId = (a.policy_id ?? a.policyId ?? campaignPolicyId ?? null) as
+            | string
+            | null;
+          return {
+            id: a.id,
+            name: a.name,
+            defaultBid: a.default_bid ?? a.defaultBid,
+            currencyCode: a.currency_code ?? a.currencyCode,
+            policyId: adgroupPolicyId,
+            isPolicyLive: (a.policy_is_live ??
+              a.policyIsLive ??
+              (adgroupPolicyId !== null ? campaignIsPolicyLive : false)) as boolean,
+          };
+        }),
+      };
+    });
 
     const group: CampaignGroup = {
       profileId,
@@ -121,7 +137,6 @@ class ApiClient {
     }
     this.cachedCampaigns[region][profileId] = group;
 
-    console.log(group);
     return group.campaigns;
   }
 
@@ -137,9 +152,7 @@ class ApiClient {
   }
 
   async getPolicies(): Promise<Policy[]> {
-    console.log('[apiClient] getPolicies called');
-
-    if (!this.cachedPolicies) {
+    if (!this.cachedPolicyMap) {
       const [_, data, err] = await createApiRequest({
         method: 'GET',
         endpoint: '/policies',
@@ -151,9 +164,16 @@ class ApiClient {
       if (!data) {
         return [];
       }
-      this.cachedPolicies = data as Policy[];
+
+      const policies = data as Policy[];
+
+      // Reset policy Map
+      this.cachedPolicyMap = {};
+      policies.forEach((p) => {
+        this.cachedPolicyMap![p.id] = p;
+      });
     }
-    return this.cachedPolicies;
+    return Object.values(this.cachedPolicyMap);
   }
 
   async createPolicy(
@@ -189,10 +209,11 @@ class ApiClient {
       rules: data.rules,
     };
 
-    // Add to cache only after successful creation
-    if (this.cachedPolicies) {
-      this.cachedPolicies.push(realPolicy);
+    // Create empty cache (if somehow not already created), and add to cache
+    if (!this.cachedPolicyMap) {
+      this.cachedPolicyMap = {};
     }
+    this.cachedPolicyMap[realPolicy.id] = realPolicy;
 
     return realPolicy;
   }
@@ -202,12 +223,12 @@ class ApiClient {
     return policies.find((policy) => policy.id === policyID) || null;
   }
 
-  async updatePolicy(policyID: string, name: string, rules: RuleNode): Promise<Policy | null> {
-    console.log('[apiClient] updatePolicy called with:', { policyID, name, rules });
+  async updatePolicy(policyId: string, name: string, rules: RuleNode): Promise<Policy | null> {
+    console.log('[apiClient] updatePolicy called with:', { policyID: policyId, name, rules });
 
     const [succ, data, err] = await createApiRequest({
       method: 'PUT',
-      endpoint: `/policies/${policyID}`,
+      endpoint: `/policies/${policyId}`,
       ...(await getAuthKeyParam()),
       body: {
         name,
@@ -229,11 +250,8 @@ class ApiClient {
     };
 
     // Update in cache if it exists
-    if (this.cachedPolicies) {
-      const index = this.cachedPolicies.findIndex((p) => p.id === policyID);
-      if (index !== -1) {
-        this.cachedPolicies[index] = updatedPolicy;
-      }
+    if (this.cachedPolicyMap) {
+      this.cachedPolicyMap[policyId] = updatedPolicy;
     }
 
     return updatedPolicy;
@@ -251,21 +269,177 @@ class ApiClient {
     return succ;
   }
 
-  async getChangeLogs(query: ChangeLogQuery): Promise<ChangeLogResult> {
-    console.log('[apiClient] getChangeLogs called with query:', query);
-    const { startTime, endTime, page = 1, pageSize = 5 } = query;
-    const all = (sampleData.changeLogs as ChangeLogEntry[]).filter((e) => {
-      return e.timestamp >= startTime && e.timestamp <= endTime;
+  private buildPolicyScopeBody(target: PolicyScopeTarget): Record<string, string> {
+    if ('campaignId' in target) {
+      return { campaign_id: target.campaignId.toString() };
+    }
+
+    return { adgroup_id: target.adgroupId.toString() };
+  }
+
+  private async syncPolicyAssignment(
+    target: PolicyScopeTarget,
+    profileId: number,
+    policyId: string,
+    isLive: boolean,
+  ): Promise<boolean> {
+    const [succ, _, err] = await createApiRequest({
+      method: 'PUT',
+      endpoint: '/user/attach',
+      ...(await getAuthKeyParam()),
+      body: {
+        ...this.buildPolicyScopeBody(target),
+        policy_id: policyId,
+        profile_id: profileId,
+        is_live: isLive,
+      },
     });
-    const total = all.length;
-    const startIdx = (page - 1) * pageSize;
-    const entries = all.slice(startIdx, startIdx + pageSize);
-    return { entries, total };
+
+    if (err || !succ) {
+      console.error('[apiClient] Failed to attach policy', { target, profileId, policyId, isLive });
+      return false;
+    }
+
+    return true;
+  }
+
+  private async removePolicyAssignment(target: PolicyScopeTarget): Promise<boolean> {
+    const [succ, _, err] = await createApiRequest({
+      method: 'DELETE',
+      endpoint: '/user/attach',
+      ...(await getAuthKeyParam()),
+      body: this.buildPolicyScopeBody(target),
+    });
+
+    if (err || !succ) {
+      console.error('[apiClient] Failed to detach policy', { target });
+      return false;
+    }
+
+    return true;
+  }
+
+  async attachPolicyToCampaign(
+    profileId: number,
+    campaign: Pick<Campaign, 'id'>,
+    policyId: string,
+    isLive: boolean,
+  ): Promise<boolean> {
+    return this.syncPolicyAssignment({ campaignId: campaign.id }, profileId, policyId, isLive);
+  }
+
+  async attachPolicyToAdgroup(
+    profileId: number,
+    adgroup: Pick<Adgroup, 'id'>,
+    policyId: string,
+    isLive: boolean,
+  ): Promise<boolean> {
+    return this.syncPolicyAssignment({ adgroupId: adgroup.id }, profileId, policyId, isLive);
+  }
+
+  async detachPolicyFromCampaign(campaign: Pick<Campaign, 'id'>): Promise<boolean> {
+    return this.removePolicyAssignment({ campaignId: campaign.id });
+  }
+
+  async detachPolicyFromAdgroup(adgroup: Pick<Adgroup, 'id'>): Promise<boolean> {
+    return this.removePolicyAssignment({ adgroupId: adgroup.id });
+  }
+
+  private getBidsEndpoint(profileId: number, campaignId?: number, adgroupId?: number): string {
+    let endpoint = `/user/bids/${profileId}`;
+
+    if (campaignId !== undefined) {
+      endpoint += `/${campaignId}`;
+    }
+
+    if (campaignId !== undefined && adgroupId !== undefined) {
+      endpoint += `/${adgroupId}`;
+    }
+
+    return endpoint;
+  }
+
+  private async fetchBidChanges(
+    profileId: number,
+    days: number,
+    campaignId?: number,
+    adgroupId?: number,
+  ): Promise<any[]> {
+    const endpoint = this.getBidsEndpoint(profileId, campaignId, adgroupId);
+    const [succ, data, err] = await createApiRequest({
+      method: 'GET',
+      endpoint,
+      ...(await getAuthKeyParam()),
+      args: {
+        days: days.toFixed(2),
+      },
+    });
+
+    if (err || !succ) {
+      alert('Failed to view change logs for profile');
+      return [];
+    }
+
+    if (!data) {
+      alert('Something went wrong');
+      return [];
+    }
+
+    return data as any[];
+  }
+
+  private mapBidChangesToEntries(entries: any[]): ChangeLogEntry[] {
+    return entries.map((entry) => ({
+      profileId: entry.profile_id as number,
+      campaignId: entry.campaign_id as string,
+      adgroup: entry.adgroup_id as string,
+      policyId: entry.policy_id as string,
+      oldPrice: entry.from_bid as number,
+      newPrice: entry.to_bid as number,
+      timestamp: new Date(entry.timestamp as string),
+      policyName: this.cachedPolicyMap?.[entry.policy_id]?.name ?? '???',
+    }));
+  }
+
+  private async getBidChangeLogs(
+    profileId: number,
+    days: number,
+    campaignId?: number,
+    adgroupId?: number,
+  ): Promise<ChangeLogEntry[]> {
+    const rawEntries = await this.fetchBidChanges(profileId, days, campaignId, adgroupId);
+    if (rawEntries.length === 0) {
+      return [];
+    }
+
+    // Ensure policy map is available for policy names in mapped entries
+    await this.getPolicies();
+
+    return this.mapBidChangesToEntries(rawEntries);
+  }
+
+  async getProfileChangeLogs(profileId: number, days: number): Promise<ChangeLogEntry[]> {
+    return this.getBidChangeLogs(profileId, days);
+  }
+
+  async getCampaignChangeLogs(
+    profileId: number,
+    campaignId: number,
+    days: number,
+  ): Promise<ChangeLogEntry[]> {
+    return this.getBidChangeLogs(profileId, days, campaignId);
+  }
+
+  async getAdgroupChangeLogs(
+    profileId: number,
+    campaignId: number,
+    adgroupId: number,
+    days: number,
+  ): Promise<ChangeLogEntry[]> {
+    return this.getBidChangeLogs(profileId, days, campaignId, adgroupId);
   }
 
   async getRedirectUrl(region: string): Promise<string | null> {
-    console.log('[apiClient] getRedirectUrl called with region:', region);
-
     if (region != 'EU' && region != 'US' && region != 'FE') {
       console.error('Invalid region', region);
       return null;

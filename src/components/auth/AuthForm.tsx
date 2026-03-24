@@ -1,5 +1,6 @@
 import { FC, ReactNode } from 'react';
 import { Card, Button, Form } from 'react-bootstrap';
+import './AuthForm.css';
 
 interface AuthFormProps {
   title: string;
@@ -9,7 +10,7 @@ interface AuthFormProps {
 }
 
 const AuthForm: FC<AuthFormProps> = ({ title, children, onSubmit, submitLabel }) => (
-  <Card style={{ maxWidth: 400, width: '100%' }}>
+  <Card className="auth-form-card">
     <Card.Header className="bg-primary text-white text-center">
       <h2 className="mb-0">{title}</h2>
     </Card.Header>

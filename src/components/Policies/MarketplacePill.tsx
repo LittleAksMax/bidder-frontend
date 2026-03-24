@@ -1,11 +1,19 @@
 import { FC } from 'react';
 import { Badge } from 'react-bootstrap';
+import './Pills.css';
 
 interface MarketplacePillProps {
   marketplace: string;
   fontSize?: string | number;
   color?: string; // Bootstrap color: 'info', 'success', etc.
 }
+
+const getMarketplacePillSizeClass = (fontSize?: string | number): string => {
+  if (fontSize === 18 || fontSize === '18' || fontSize === '18px') {
+    return 'marketplace-pill-size-large';
+  }
+  return 'marketplace-pill-size-default';
+};
 
 const MarketplacePill: FC<MarketplacePillProps> = ({
   marketplace,
@@ -15,14 +23,7 @@ const MarketplacePill: FC<MarketplacePillProps> = ({
   <Badge
     bg={color}
     pill
-    className="ms-2"
-    style={{
-      padding: '0.1em 0.3em',
-      lineHeight: 1,
-      verticalAlign: 'middle',
-      width: '2em',
-      fontSize,
-    }}
+    className={`ms-2 marketplace-pill ${getMarketplacePillSizeClass(fontSize)}`}
   >
     {marketplace}
   </Badge>

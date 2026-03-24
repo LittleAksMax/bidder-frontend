@@ -1,0 +1,164 @@
+.empty-slot-root {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 0.5rem 0;
+  width: 80%;
+}
+
+.empty-slot-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.empty-slot-label {
+  margin-left: 6px;
+}
+
+.condition-node {
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0.5rem 0;
+}
+
+.condition-node-depth-0 {
+  background-color: #eaf2ff;
+}
+
+.condition-node-depth-1 {
+  background-color: #e9f3fa;
+}
+
+.condition-node-depth-2 {
+  background-color: #e8f4f3;
+}
+
+.condition-node-depth-3 {
+  background-color: #eaf6ec;
+}
+
+.condition-node-depth-4 {
+  background-color: #f1f8e6;
+}
+
+.condition-node-depth-5 {
+  background-color: #fff8e3;
+}
+
+.condition-node-depth-6 {
+  background-color: #fff1e6;
+}
+
+.condition-node-depth-7 {
+  background-color: #fde9ea;
+}
+
+.condition-node-depth-8 {
+  background-color: #f8e4e8;
+}
+
+.condition-node-depth-9 {
+  background-color: #f6e2e4;
+}
+
+.condition-node-header {
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 8px;
+}
+
+.condition-node-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.condition-node-header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.condition-node-number-input {
+  width: 80px;
+}
+
+.condition-node-variable-select {
+  width: 15em;
+}
+
+.condition-node-section {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.condition-node-section-last {
+  position: relative;
+}
+
+.condition-node-divider {
+  border: 1px solid #ccc;
+}
+
+.condition-node-branch-label {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: inherit;
+  padding: 0 8px;
+  font-weight: 500;
+}
+
+.terminal-node {
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0.5rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-node-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-node-sign {
+  cursor: pointer;
+  width: 0.5em;
+}
+
+.terminal-node-sign-positive {
+  color: green;
+}
+
+.terminal-node-sign-negative {
+  color: red;
+}
+
+.terminal-node-amount-input {
+  width: 60px;
+}
+
+.terminal-node-percent {
+  cursor: pointer;
+}
+
+.terminal-node-percent-on {
+  color: blue;
+}
+
+.terminal-node-percent-off {
+  color: gray;
+}
+
+.terminal-node-hint {
+  color: #aaa;
+  font-style: italic;
+}

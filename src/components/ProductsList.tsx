@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import { ListGroup } from 'react-bootstrap';
 import { Product } from '../api/types';
+import './ProductsList.css';
 
 interface ProductsListProps {
   products: Product[];
@@ -11,8 +12,7 @@ const ProductsList: FC<ProductsListProps> = ({ products }) => (
     {products.map((product) => (
       <ListGroup.Item
         key={product.id}
-        style={{ paddingTop: 4, paddingBottom: 4 }}
-        className="d-flex justify-content-between align-items-center"
+        className="d-flex justify-content-between align-items-center products-list-item"
       >
         <span>
           <strong>{product.sku}</strong> - {product.name}

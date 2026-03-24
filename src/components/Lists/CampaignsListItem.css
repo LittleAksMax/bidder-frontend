@@ -1,0 +1,7 @@
+.campaigns-list-item {
+  min-height: 0;
+  line-height: 1.2;
+  margin-top: 2px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}

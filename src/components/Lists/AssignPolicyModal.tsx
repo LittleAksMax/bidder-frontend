@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { Modal, Button, ListGroup, Spinner } from 'react-bootstrap';
+import { Modal, ListGroup, Spinner } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
 import { Policy } from '../../api/types';
 import './policy-modal.css';
@@ -8,7 +8,7 @@ interface AssignPolicyModalProps {
   show: boolean;
   onHide: () => void;
   onAssign: (policyId: string) => void;
-  campaignMarketplace: string; // Add marketplace prop
+  campaignMarketplace: string;
 }
 
 const AssignPolicyModal: FC<AssignPolicyModalProps> = ({
@@ -39,9 +39,9 @@ const AssignPolicyModal: FC<AssignPolicyModalProps> = ({
       <Modal.Header closeButton>
         <Modal.Title>Assign Policy</Modal.Title>
       </Modal.Header>
-      <Modal.Body style={{ maxHeight: 400, overflowY: 'auto' }}>
+      <Modal.Body className="assign-policy-modal-body">
         {loading ? (
-          <div className="d-flex justify-content-center align-items-center" style={{ height: 200 }}>
+          <div className="d-flex justify-content-center align-items-center assign-policy-loading">
             <Spinner animation="border" />
           </div>
         ) : (
@@ -54,7 +54,6 @@ const AssignPolicyModal: FC<AssignPolicyModalProps> = ({
                   onAssign(policy.id); // Return only the policyID
                   onHide();
                 }}
-                style={{ cursor: 'pointer', transition: 'background 0.2s' }}
                 className="policy-select-item"
               >
                 {policy.name}

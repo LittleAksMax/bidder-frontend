@@ -1,0 +1,9 @@
+.campaigns-list-container-card {
+  height: 100%;
+  width: 100%;
+}
+
+.campaigns-list-container-body {
+  flex: 1;
+  width: 100%;
+}

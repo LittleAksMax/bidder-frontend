@@ -1,5 +1,19 @@
+.policy-select-item {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
 .policy-select-item:hover,
 .policy-select-item:focus {
   background-color: #ffe5cc !important;
   color: #222 !important;
+}
+
+.assign-policy-modal-body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.assign-policy-loading {
+  height: 200px;
 }

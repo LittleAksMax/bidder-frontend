@@ -1,40 +1,61 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, MouseEvent, useEffect, useState } from 'react';
+import { Form, ListGroup, Spinner } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { ListGroup, Button } from 'react-bootstrap';
-import { Campaign, Policy } from '../../api/types';
+import { Campaign, Policy, Profile } from '../../api/types';
 import AdgroupsList from './AdgroupsList';
 import ExpandButton from './ExpandButton';
-import PolicyPill from '../Policies/PolicyPill';
 import AssignPolicyModal from './AssignPolicyModal';
 import CreateButton from '../buttons/CreateButton';
-import EditButton from '../buttons/EditButton';
 import DeleteButton from '../buttons/DeleteButton';
 import './CampaignsList.css';
-import ChangeLogModal from './ChangeLogModal';
+import ChangeLogModal, { ChangeLogScope } from './ChangeLogModal';
 import CampaignsListItem from './CampaignsListItem';
 import CampaignsListRowSections from './CampaignsListRowSections';
 
-const POLICY_PILL_FONT_SIZE = '1em'; // Adjust as needed
-const VIEW_CHANGE_LOG_FONT_SIZE = '1em'; // Adjust as needed
+const POLICY_PILL_FONT_SIZE = '1em';
 
 interface CampaignsListProps {
-  selectedMarketplace: string | null;
   region: string | null;
-  profileId: number | null;
+  sellerId: string | null;
+  profile: Profile | null;
 }
 
-const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace, region, profileId }) => {
+type ChangeLogContext = {
+  scope: ChangeLogScope;
+  campaignId?: number;
+  adgroupId?: number;
+};
+
+type AssignPolicyContext =
+  | {
+      level: 'campaign';
+      campaignId: number;
+      campaignMarketplace: string;
+    }
+  | {
+      level: 'adgroup';
+      campaignId: number;
+      adgroupId: number;
+      campaignMarketplace: string;
+    };
+
+const defaultProfileFields = { profileId: null, countryCode: '' };
+
+const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [expanded, setExpanded] = useState<number[]>([]);
-  const [showAssignModal, setShowAssignModal] = useState<number | null>(null);
-  const [showChangeLog, setShowChangeLog] = useState<number | null>(null);
+  const [assignPolicyContext, setAssignPolicyContext] = useState<AssignPolicyContext | null>(null);
+  const [changeLogContext, setChangeLogContext] = useState<ChangeLogContext | null>(null);
   const [policies, setPolicies] = useState<Record<string, Policy>>({});
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const { profileId, countryCode } = profile ?? defaultProfileFields;
 
   useEffect(() => {
-    if (region && profileId !== null) {
+    if (region && profileId) {
       apiClient.getCampaigns(region, profileId).then((data) => {
         setCampaigns(data);
-        setExpanded(data.map((c) => c.id));
+        setExpanded([]);
       });
     } else {
       setCampaigns([]);
@@ -43,120 +64,361 @@ const CampaignsList: FC<CampaignsListProps> = ({ selectedMarketplace, region, pr
   }, [region, profileId]);
 
   useEffect(() => {
-    if (campaigns.length > 0) {
+    setLoading(true);
+    if (campaigns.length === 0) {
+      setPolicies({});
+    } else {
       const fetchPolicies = async () => {
         const policyMap: Record<string, Policy> = {};
-        for (const campaign of campaigns) {
+        const policyIds = new Set<string>();
+
+        campaigns.forEach((campaign) => {
           if (campaign.policyId) {
-            const policy = await apiClient.getPolicyByID(campaign.policyId!);
-            if (policy) {
-              policyMap[campaign.policyId!] = policy;
+            policyIds.add(campaign.policyId);
+          }
+          campaign.adgroups.forEach((adgroup) => {
+            if (adgroup.policyId) {
+              policyIds.add(adgroup.policyId);
             }
+          });
+        });
+
+        for (const policyId of policyIds) {
+          const policy = await apiClient.getPolicyByID(policyId);
+          if (policy) {
+            policyMap[policyId] = policy;
           }
         }
         setPolicies(policyMap);
       };
 
-      fetchPolicies();
+      void fetchPolicies();
     }
+    setLoading(false);
   }, [campaigns]);
 
   const filteredCampaigns = campaigns;
+
+  const getCampaignById = (campaignId: number): Campaign | null =>
+    campaigns.find((campaign) => campaign.id === campaignId) ?? null;
+
+  const getAdgroupById = (campaignId: number, adgroupId: number) => {
+    const campaign = getCampaignById(campaignId);
+    if (!campaign) {
+      return null;
+    }
+    return campaign.adgroups.find((adgroup) => adgroup.id === adgroupId) ?? null;
+  };
 
   const handleToggle = (id: number) => {
     setExpanded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleRemovePolicy = (campaignId: number) => {
-    setCampaigns((prev) => prev.map((c) => (c.id === campaignId ? { ...c, policyId: null } : c)));
+  const handleCampaignRowClick = (campaignId: number, event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('.campaign-row-action')) {
+      return;
+    }
+    handleToggle(campaignId);
   };
 
-  return (
-    <ListGroup>
-      {filteredCampaigns.map((campaign) => {
-        const policy = campaign.policyId ? policies[campaign.policyId] : null;
-        return (
-          <CampaignsListItem key={campaign.id}>
-            <CampaignsListRowSections
-              nameSection={
-                <>
-                  <ExpandButton
-                    expanded={expanded.includes(campaign.id)}
-                    onToggle={() => handleToggle(campaign.id)}
-                    ariaLabel={
-                      expanded.includes(campaign.id) ? 'Collapse campaign' : 'Expand campaign'
-                    }
-                    className="me-1"
-                  />
-                  <span
-                    style={{
-                      verticalAlign: 'middle',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {campaign.name}
-                  </span>
-                </>
+  const handleRemoveCampaignPolicy = (campaignId: number) => {
+    const campaign = getCampaignById(campaignId);
+    if (campaign) {
+      campaign.adgroups.forEach((adgroup) => {
+        if (adgroup.policyId) {
+          void apiClient.detachPolicyFromAdgroup(adgroup);
+        }
+      });
+    }
+
+    setCampaigns((prev) =>
+      prev.map((campaign) =>
+        campaign.id === campaignId
+          ? {
+              ...campaign,
+              policyId: null,
+              isPolicyLive: false,
+              adgroups: campaign.adgroups.map((adgroup) => ({
+                ...adgroup,
+                policyId: null,
+                isPolicyLive: false,
+              })),
+            }
+          : campaign,
+      ),
+    );
+  };
+
+  const handleToggleCampaignPolicyLive = (campaignId: number, isLive: boolean) => {
+    const campaign = getCampaignById(campaignId);
+    if (campaign && profileId !== null) {
+      campaign.adgroups.forEach((adgroup) => {
+        if (adgroup.policyId) {
+          void apiClient.attachPolicyToAdgroup(profileId, adgroup, adgroup.policyId, isLive);
+        }
+      });
+    }
+
+    setCampaigns((prev) =>
+      prev.map((campaign) =>
+        campaign.id === campaignId
+          ? {
+              ...campaign,
+              isPolicyLive: isLive,
+              adgroups: campaign.adgroups.map((adgroup) => ({ ...adgroup, isPolicyLive: isLive })),
+            }
+          : campaign,
+      ),
+    );
+  };
+
+  const handleRemoveAdgroupPolicy = (campaignId: number, adgroupId: number) => {
+    const adgroup = getAdgroupById(campaignId, adgroupId);
+    if (adgroup) {
+      void apiClient.detachPolicyFromAdgroup(adgroup);
+    }
+
+    setCampaigns((prev) =>
+      prev.map((campaign) =>
+        campaign.id === campaignId
+          ? {
+              ...campaign,
+              adgroups: campaign.adgroups.map((adgroup) =>
+                adgroup.id === adgroupId
+                  ? { ...adgroup, policyId: null, isPolicyLive: false }
+                  : adgroup,
+              ),
+            }
+          : campaign,
+      ),
+    );
+  };
+
+  const handleToggleAdgroupPolicyLive = (
+    campaignId: number,
+    adgroupId: number,
+    isLive: boolean,
+  ) => {
+    const adgroup = getAdgroupById(campaignId, adgroupId);
+    if (adgroup?.policyId && profileId !== null) {
+      void apiClient.attachPolicyToAdgroup(profileId, adgroup, adgroup.policyId, isLive);
+    }
+
+    setCampaigns((prev) =>
+      prev.map((campaign) =>
+        campaign.id === campaignId
+          ? {
+              ...campaign,
+              adgroups: campaign.adgroups.map((adgroup) =>
+                adgroup.id === adgroupId ? { ...adgroup, isPolicyLive: isLive } : adgroup,
+              ),
+            }
+          : campaign,
+      ),
+    );
+  };
+
+  const handleAssignPolicy = (policyId: string) => {
+    if (!assignPolicyContext) {
+      return;
+    }
+
+    if (assignPolicyContext.level === 'campaign') {
+      const campaign = getCampaignById(assignPolicyContext.campaignId);
+      if (campaign && profileId !== null) {
+        campaign.adgroups.forEach((adgroup) => {
+          void apiClient.attachPolicyToAdgroup(profileId, adgroup, policyId, true);
+        });
+      }
+
+      setCampaigns((prev) =>
+        prev.map((campaign) =>
+          campaign.id === assignPolicyContext.campaignId
+            ? {
+                ...campaign,
+                policyId,
+                isPolicyLive: true,
+                adgroups: campaign.adgroups.map((adgroup) => ({
+                  ...adgroup,
+                  policyId,
+                  isPolicyLive: true,
+                })),
               }
-              policySection={
-                policy ? (
-                  <PolicyPill ruleType={policy.type} fontSize={POLICY_PILL_FONT_SIZE} />
-                ) : null
-              }
-              buttonsSection={
-                policy ? (
-                  <>
-                    <DeleteButton onClick={() => handleRemovePolicy(campaign.id)} />
-                    <EditButton onClick={() => setShowAssignModal(campaign.id)} />
-                  </>
-                ) : (
-                  <CreateButton onClick={() => setShowAssignModal(campaign.id)} />
-                )
-              }
-              changeLogSection={
-                <Button
-                  className="btn-changelog"
-                  size="sm"
-                  onClick={() => setShowChangeLog(campaign.id)}
-                  style={{
-                    padding: '2px 0.6rem',
-                    minWidth: 0,
-                    minHeight: 0,
-                    lineHeight: 1,
-                    fontSize: VIEW_CHANGE_LOG_FONT_SIZE,
-                  }}
-                >
-                  View Change Log
-                </Button>
-              }
-            />
-            {expanded.includes(campaign.id) && (
-              <div className="mt-2">
-                <AdgroupsList adgroups={campaign.adgroups} />
+            : campaign,
+        ),
+      );
+      return;
+    }
+
+    const adgroup = getAdgroupById(assignPolicyContext.campaignId, assignPolicyContext.adgroupId);
+    if (adgroup && profileId !== null) {
+      void apiClient.attachPolicyToAdgroup(profileId, adgroup, policyId, true);
+    }
+
+    setCampaigns((prev) =>
+      prev.map((campaign) =>
+        campaign.id === assignPolicyContext.campaignId
+          ? {
+              ...campaign,
+              adgroups: campaign.adgroups.map((adgroup) =>
+                adgroup.id === assignPolicyContext.adgroupId
+                  ? { ...adgroup, policyId, isPolicyLive: true }
+                  : adgroup,
+              ),
+            }
+          : campaign,
+      ),
+    );
+  };
+
+  const hasSellerAndProfile = sellerId !== null && profileId !== null;
+
+  return loading ? (
+    <div className="d-flex justify-content-center align-items-center assign-policy-loading">
+      <Spinner animation="border" />
+    </div>
+  ) : (
+    <>
+      <ListGroup>
+        {filteredCampaigns.map((campaign) => {
+          const campaignHasAnyPolicy = campaign.adgroups.some((adgroup) => adgroup.policyId !== null);
+          const areAllAdgroupsLive =
+            campaign.adgroups.length > 0 && campaign.adgroups.every((adgroup) => adgroup.isPolicyLive);
+
+          return (
+            <CampaignsListItem key={campaign.id}>
+              <div
+                className="campaign-row-click-area"
+                onClick={(event) => handleCampaignRowClick(campaign.id, event)}
+              >
+                <CampaignsListRowSections
+                  nameSection={
+                    <>
+                      <ExpandButton
+                        expanded={expanded.includes(campaign.id)}
+                        onToggle={() => handleToggle(campaign.id)}
+                        ariaLabel={
+                          expanded.includes(campaign.id) ? 'Collapse campaign' : 'Expand campaign'
+                        }
+                        className="me-1 campaign-row-action"
+                      />
+                      <span className="campaign-row-name-wrap">
+                        <button
+                          type="button"
+                          className="changelog-name-btn campaign-row-action campaign-name-button"
+                          onClick={() =>
+                            setChangeLogContext({
+                              scope: 'campaign',
+                              campaignId: campaign.id,
+                            })
+                          }
+                          disabled={!hasSellerAndProfile}
+                          aria-label={`View change log for campaign ${campaign.name}`}
+                          title={`View change log for campaign ${campaign.name}`}
+                        >
+                          {campaign.name}
+                        </button>
+                      </span>
+                    </>
+                  }
+                  policySection={
+                    <div className="d-flex align-items-center campaign-row-action">
+                      <Form.Check
+                        id={`campaign-live-${campaign.id}`}
+                        type="checkbox"
+                        label="Toggle All"
+                        checked={areAllAdgroupsLive}
+                        onChange={(event) =>
+                          handleToggleCampaignPolicyLive(campaign.id, event.target.checked)
+                        }
+                        className="ms-2 policy-live-toggle"
+                        disabled={!campaignHasAnyPolicy}
+                      />
+                    </div>
+                  }
+                  buttonsSection={
+                    <>
+                      <CreateButton
+                        onClick={() =>
+                          setAssignPolicyContext({
+                            level: 'campaign',
+                            campaignId: campaign.id,
+                            campaignMarketplace: countryCode,
+                          })
+                        }
+                        className="campaign-row-action"
+                      />
+                      <DeleteButton
+                        onClick={() => handleRemoveCampaignPolicy(campaign.id)}
+                        className="campaign-row-action"
+                      />
+                    </>
+                  }
+                />
               </div>
-            )}
-            <AssignPolicyModal
-              show={showAssignModal === campaign.id}
-              onHide={() => setShowAssignModal(null)}
-              onAssign={(policyId: string) => {
-                setShowAssignModal(null);
-                setCampaigns((prevCampaigns) =>
-                  prevCampaigns.map((c) => (c.id === campaign.id ? { ...c, policyId } : c)),
-                );
-              }}
-              campaignMarketplace={campaign.marketplace} // Pass marketplace for filtering
-            />
-            <ChangeLogModal
-              show={showChangeLog === campaign.id}
-              onHide={() => setShowChangeLog(null)}
-              adgroups={campaign.adgroups}
-            />
-          </CampaignsListItem>
-        );
-      })}
-    </ListGroup>
+              {expanded.includes(campaign.id) && (
+                <div className="mt-2">
+                  <AdgroupsList
+                    adgroups={campaign.adgroups}
+                    policies={policies}
+                    policyPillFontSize={POLICY_PILL_FONT_SIZE}
+                    canViewChangeLog={hasSellerAndProfile}
+                    onViewChangeLog={(adgroup) =>
+                      setChangeLogContext({
+                        scope: 'adgroup',
+                        campaignId: campaign.id,
+                        adgroupId: adgroup.id,
+                      })
+                    }
+                    onAttachPolicy={(adgroupId) =>
+                      setAssignPolicyContext({
+                        level: 'adgroup',
+                        campaignId: campaign.id,
+                        adgroupId,
+                        campaignMarketplace: countryCode,
+                      })
+                    }
+                    onEditPolicy={(adgroupId) =>
+                      setAssignPolicyContext({
+                        level: 'adgroup',
+                        campaignId: campaign.id,
+                        adgroupId,
+                        campaignMarketplace: countryCode,
+                      })
+                    }
+                    onRemovePolicy={(adgroupId) =>
+                      handleRemoveAdgroupPolicy(campaign.id, adgroupId)
+                    }
+                    onTogglePolicyLive={(adgroupId, isLive) =>
+                      handleToggleAdgroupPolicyLive(campaign.id, adgroupId, isLive)
+                    }
+                  />
+                </div>
+              )}
+            </CampaignsListItem>
+          );
+        })}
+      </ListGroup>
+      <AssignPolicyModal
+        show={assignPolicyContext !== null}
+        onHide={() => setAssignPolicyContext(null)}
+        onAssign={(policyId: string) => {
+          handleAssignPolicy(policyId);
+          setAssignPolicyContext(null);
+        }}
+        campaignMarketplace={assignPolicyContext?.campaignMarketplace ?? ''}
+      />
+      <ChangeLogModal
+        show={changeLogContext !== null}
+        onHide={() => setChangeLogContext(null)}
+        scope={changeLogContext?.scope ?? 'campaign'}
+        sellerId={sellerId}
+        profileId={profileId ?? null}
+        campaignId={changeLogContext?.campaignId ?? null}
+        adgroupId={changeLogContext?.adgroupId ?? null}
+      />
+    </>
   );
 };
 

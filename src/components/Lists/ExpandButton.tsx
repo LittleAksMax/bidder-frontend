@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import './ExpandButton.css';
 
 interface ExpandButtonProps {
   expanded: boolean;
@@ -16,18 +17,7 @@ const ExpandButton: FC<ExpandButtonProps> = ({ expanded, onToggle, ariaLabel, cl
       if (e.key === 'Enter' || e.key === ' ') onToggle();
     }}
     aria-label={ariaLabel || (expanded ? 'Collapse' : 'Expand')}
-    className={className}
-    style={{
-      display: 'inline-block',
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      fontSize: '1.1em',
-      width: 20,
-      textAlign: 'center',
-      userSelect: 'none',
-      lineHeight: 1,
-      marginRight: 6,
-    }}
+    className={['expand-button', className].filter(Boolean).join(' ')}
   >
     {expanded ? '-' : '+'}
   </span>

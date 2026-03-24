@@ -2,9 +2,16 @@ import { FC, useEffect, useState } from 'react';
 import { Button, Dropdown } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import CampaignsListContainer from '../components/Lists/CampaignsListContainer';
+import ChangeLogModal, { ChangeLogScope } from '../components/Lists/ChangeLogModal';
+import ViewChangeLogButton from '../components/buttons/ViewChangeLogButton';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
 import { ProfileGroup } from '../api/types';
+
+const STORAGE_KEYS = {
+  sellerId: 'home.selectedSellerId',
+  marketplace: 'home.selectedMarketplace',
+};
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -12,29 +19,68 @@ const Home: FC = () => {
   const [selectedSeller, setSelectedSeller] = useState<ProfileGroup | null>(null);
   const [marketplaces, setMarketplaces] = useState<string[]>([]);
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
+  const [showChangeLog, setShowChangeLog] = useState(false);
+  const [sellersLoaded, setSellersLoaded] = useState(false);
+  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 
   useEffect(() => {
     apiClient.getSellerProfiles().then((s) => {
       setSellers(s);
-      if (s.length !== 0) {
-        setSelectedSeller(s[0] ?? null);
-      }
+      const savedSellerId = window.localStorage.getItem(STORAGE_KEYS.sellerId);
+      const savedSeller = savedSellerId
+        ? (s.find((seller) => seller.id === savedSellerId) ?? null)
+        : null;
+      setSelectedSeller(savedSeller ?? s[0] ?? null);
+      setSellersLoaded(true);
     });
   }, []);
 
   useEffect(() => {
+    if (!sellersLoaded) {
+      return;
+    }
+
     if (selectedSeller) {
       const codes = selectedSeller.profiles.map((p) => p.countryCode);
       setMarketplaces(codes);
-      setSelectedMarketplace(codes[0] ?? null);
+      const savedMarketplace = window.localStorage.getItem(STORAGE_KEYS.marketplace);
+      const persistedMarketplace =
+        savedMarketplace && codes.includes(savedMarketplace) ? savedMarketplace : null;
+      setSelectedMarketplace(persistedMarketplace ?? codes[0] ?? null);
     } else {
       setMarketplaces([]);
       setSelectedMarketplace(null);
     }
-  }, [selectedSeller]);
+    setHasInitializedSelection(true);
+  }, [selectedSeller, sellersLoaded]);
+
+  useEffect(() => {
+    if (!hasInitializedSelection) {
+      return;
+    }
+
+    if (selectedSeller?.id) {
+      window.localStorage.setItem(STORAGE_KEYS.sellerId, selectedSeller.id);
+      return;
+    }
+    window.localStorage.removeItem(STORAGE_KEYS.sellerId);
+  }, [selectedSeller, hasInitializedSelection]);
+
+  useEffect(() => {
+    if (!hasInitializedSelection) {
+      return;
+    }
+
+    if (selectedMarketplace) {
+      window.localStorage.setItem(STORAGE_KEYS.marketplace, selectedMarketplace);
+      return;
+    }
+    window.localStorage.removeItem(STORAGE_KEYS.marketplace);
+  }, [selectedMarketplace, hasInitializedSelection]);
 
   const selectedProfile =
     selectedSeller?.profiles.find((p) => p.countryCode === selectedMarketplace) ?? null;
+  const changeLogScope: ChangeLogScope = selectedProfile ? 'profile' : 'seller';
 
   return (
     <Page showSettings>
@@ -75,14 +121,25 @@ const Home: FC = () => {
                 : null}
             </Dropdown.Menu>
           </Dropdown>
+          <ViewChangeLogButton
+            onClick={() => setShowChangeLog(true)}
+            disabled={selectedSeller === null}
+          />
         </div>
         <Button variant="outline-primary" size="sm" onClick={() => navigate('/policies')}>
           Manage Policies
         </Button>
       </div>
       <CampaignsListContainer
-        selectedMarketplace={marketplaces.length > 0 ? selectedMarketplace : null}
         region={selectedProfile?.region ?? null}
+        sellerId={selectedSeller?.id ?? null}
+        profile={selectedProfile}
+      />
+      <ChangeLogModal
+        show={showChangeLog}
+        onHide={() => setShowChangeLog(false)}
+        scope={changeLogScope}
+        sellerId={selectedSeller?.id ?? null}
         profileId={selectedProfile?.profileId ?? null}
       />
     </Page>

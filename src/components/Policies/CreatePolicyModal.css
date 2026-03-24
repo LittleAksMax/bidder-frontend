@@ -14,3 +14,26 @@
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
+.policy-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin: 1rem;
+}
+
+.policy-modal-submit-btn {
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+}
+
+.policy-modal-submit-btn.is-enabled {
+  background-color: green;
+  cursor: pointer;
+}
+
+.policy-modal-submit-btn.is-disabled {
+  background-color: #a9d3a9;
+  cursor: not-allowed;
+}

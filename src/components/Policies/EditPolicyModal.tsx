@@ -28,6 +28,9 @@ const EditPolicyModal: FC<EditPolicyModalProps> = ({ show, onClose, policy, hand
       setRules(policy.rules);
     }
   }, [policy]);
+
+  const isUpdateEnabled = allSlotsFilled && Boolean(rules) && Boolean(policy) && Boolean(policyName.trim());
+
   let RuleComponent = null;
   if (policy?.type === 'nested') {
     RuleComponent = (
@@ -64,17 +67,10 @@ const EditPolicyModal: FC<EditPolicyModalProps> = ({ show, onClose, policy, hand
         </button>
       </div>
       <div className="modal-body">{RuleComponent}</div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1rem' }}>
+      <div className="policy-modal-footer">
         <button
-          style={{
-            backgroundColor: allSlotsFilled && policyName.trim() ? 'green' : '#a9d3a9',
-            color: 'white',
-            padding: '0.5rem 1rem',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: allSlotsFilled && policyName.trim() ? 'pointer' : 'not-allowed',
-          }}
-          disabled={!allSlotsFilled || !rules || !policy || !policyName.trim()}
+          className={`policy-modal-submit-btn ${isUpdateEnabled ? 'is-enabled' : 'is-disabled'}`}
+          disabled={!isUpdateEnabled}
           onClick={() => {
             if (policy && rules) {
               handleUpdate(policy.id, policyName, rules);

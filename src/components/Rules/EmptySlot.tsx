@@ -1,7 +1,8 @@
-import React, { FC, useState } from 'react';
+import { FC } from 'react';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import CreateButton from '../buttons/CreateButton';
-import { VARIABLE_TYPES, VariableType } from '../../api/types';
+import { VariableType } from '../../api/types';
+import './styles/RuleNodes.css';
 
 interface EmptySlotProps {
   onAddCondition: null | (() => void);
@@ -13,9 +14,7 @@ export const EmptySlot: FC<EmptySlotProps> = ({ onAddCondition, onAddTerminal, a
   const noVars = availableVars.length === 0;
 
   return (
-    <div
-      style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '0.5rem 0', width: '80%' }}
-    >
+    <div className="empty-slot-root">
       {onAddCondition && !noVars && (
         <OverlayTrigger
           placement="top"
@@ -25,15 +24,15 @@ export const EmptySlot: FC<EmptySlotProps> = ({ onAddCondition, onAddTerminal, a
             </Tooltip>
           }
         >
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          <div className="empty-slot-action">
             <CreateButton onClick={onAddCondition} />
-            <span style={{ marginLeft: 6 }}>Add Condition</span>
+            <span className="empty-slot-label">Add Condition</span>
           </div>
         </OverlayTrigger>
       )}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+      <div className="empty-slot-action">
         <CreateButton onClick={onAddTerminal} />
-        <span style={{ marginLeft: 6 }}>Add Terminal</span>
+        <span className="empty-slot-label">Add Terminal</span>
       </div>
     </div>
   );

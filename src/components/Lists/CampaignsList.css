@@ -26,3 +26,139 @@
   stroke: #fff !important;
   fill: #0d6efd !important;
 }
+
+.campaign-row-sections {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.campaign-row-name-section {
+  min-width: 220px;
+  flex: 0 1 320px;
+  display: flex;
+  align-items: center;
+}
+
+.campaign-row-policy-section {
+  min-width: 220px;
+  flex: 0 0 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.campaign-row-buttons-section {
+  min-width: 110px;
+  flex: 0 0 110px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.campaign-row-name-wrap {
+  vertical-align: middle;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.campaign-name-button {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.changelog-name-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.changelog-name-btn:hover,
+.changelog-name-btn:focus-visible {
+  color: #0d6efd;
+}
+
+.changelog-name-btn:disabled {
+  color: inherit;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.campaign-row-click-area {
+  cursor: pointer;
+}
+
+.campaign-row-action {
+  cursor: pointer;
+}
+
+.policy-live-toggle {
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+.policy-live-toggle .form-check-label {
+  font-size: 0.85rem;
+  margin-left: 4px;
+  user-select: none;
+}
+
+.adgroup-row {
+  width: 100%;
+  gap: 12px;
+}
+
+.adgroup-name-section {
+  flex: 0 1 260px;
+  max-width: 260px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.adgroup-name-button {
+  max-width: 100%;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adgroup-bid-section {
+  display: inline-flex;
+  align-items: center;
+}
+
+.adgroup-bid-value {
+  width: 3.5em;
+  display: inline-block;
+}
+
+.adgroup-currency-value {
+  width: 3em;
+  display: inline-block;
+}
+
+.adgroup-policy-section {
+  display: inline-flex;
+  align-items: center;
+}
+
+.adgroup-actions-section {
+  min-width: 110px;
+  flex: 0 0 110px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

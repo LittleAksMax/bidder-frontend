@@ -1,0 +1,14 @@
+.policies-list-content {
+  gap: 1.5rem;
+}
+
+.policies-list-header {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  gap: 0.5em;
+}
+
+.policies-list-actions {
+  gap: 0.5rem;
+}

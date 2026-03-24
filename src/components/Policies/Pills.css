@@ -1,0 +1,29 @@
+.marketplace-pill,
+.policy-pill {
+  padding: 0.1em 0.3em;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.marketplace-pill {
+  width: 2em;
+}
+
+.policy-pill {
+  width: 7em;
+}
+
+.policy-pill-size-default,
+.marketplace-pill-size-default {
+  font-size: 1em;
+}
+
+.policy-pill-size-large,
+.marketplace-pill-size-large {
+  font-size: 18px;
+}
+
+.policy-name {
+  width: 10em;
+  display: inline-block;
+}
