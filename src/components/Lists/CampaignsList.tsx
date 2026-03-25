@@ -23,20 +23,20 @@ interface CampaignsListProps {
 
 type ChangeLogContext = {
   scope: ChangeLogScope;
-  campaignId?: number;
-  adgroupId?: number;
+  campaignId?: string;
+  adgroupId?: string;
 };
 
 type AssignPolicyContext =
   | {
       level: 'campaign';
-      campaignId: number;
+      campaignId: string;
       campaignMarketplace: string;
     }
   | {
       level: 'adgroup';
-      campaignId: number;
-      adgroupId: number;
+      campaignId: string;
+      adgroupId: string;
       campaignMarketplace: string;
     };
 
@@ -44,7 +44,7 @@ const defaultProfileFields = { profileId: null, countryCode: '' };
 
 const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, selectionPending }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [expanded, setExpanded] = useState<number[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const [assignPolicyContext, setAssignPolicyContext] = useState<AssignPolicyContext | null>(null);
   const [changeLogContext, setChangeLogContext] = useState<ChangeLogContext | null>(null);
   const [policies, setPolicies] = useState<Record<string, Policy>>({});
@@ -127,10 +127,10 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
 
   const filteredCampaigns = campaigns;
 
-  const getCampaignById = (campaignId: number): Campaign | null =>
+  const getCampaignById = (campaignId: string): Campaign | null =>
     campaigns.find((campaign) => campaign.id === campaignId) ?? null;
 
-  const getAdgroupById = (campaignId: number, adgroupId: number) => {
+  const getAdgroupById = (campaignId: string, adgroupId: string) => {
     const campaign = getCampaignById(campaignId);
     if (!campaign) {
       return null;
@@ -138,11 +138,11 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
     return campaign.adgroups.find((adgroup) => adgroup.id === adgroupId) ?? null;
   };
 
-  const handleToggle = (id: number) => {
+  const handleToggle = (id: string) => {
     setExpanded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleCampaignRowClick = (campaignId: number, event: MouseEvent<HTMLDivElement>) => {
+  const handleCampaignRowClick = (campaignId: string, event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest('.campaign-row-action')) {
       return;
@@ -150,14 +150,18 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
     handleToggle(campaignId);
   };
 
-  const handleRemoveCampaignPolicy = (campaignId: number) => {
+  const handleRemoveCampaignPolicy = (campaignId: string) => {
     const campaign = getCampaignById(campaignId);
-    if (campaign) {
-      campaign.adgroups.forEach((adgroup) => {
-        if (adgroup.policyId) {
-          void apiClient.detachPolicyFromAdgroup(adgroup);
-        }
-      });
+    if (campaign && profileId !== null) {
+      const attachedAdgroupIds = campaign.adgroups
+        .filter((adgroup) => Boolean(adgroup.policyId))
+        .map((adgroup) => adgroup.id);
+
+      void apiClient.detachPolicyFromCampaign(
+        profileId,
+        campaign.id,
+        attachedAdgroupIds,
+      );
     }
 
     setCampaigns((prev) =>
@@ -178,14 +182,26 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
     );
   };
 
-  const handleToggleCampaignPolicyLive = (campaignId: number, isLive: boolean) => {
+  const handleToggleCampaignPolicyLive = (campaignId: string, isLive: boolean) => {
     const campaign = getCampaignById(campaignId);
     if (campaign && profileId !== null) {
-      campaign.adgroups.forEach((adgroup) => {
-        if (adgroup.policyId) {
-          void apiClient.attachPolicyToAdgroup(profileId, adgroup, adgroup.policyId, isLive);
-        }
-      });
+      const assignments = campaign.adgroups.flatMap((adgroup) =>
+        adgroup.policyId
+          ? [
+              {
+                profileId,
+                campaignId: campaign.id,
+                adgroupId: adgroup.id,
+                policyId: adgroup.policyId,
+                isLive,
+              },
+            ]
+          : [],
+      );
+
+      if (assignments.length > 0) {
+        void apiClient.attachPoliciesBatch(assignments);
+      }
     }
 
     setCampaigns((prev) =>
@@ -201,10 +217,10 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
     );
   };
 
-  const handleRemoveAdgroupPolicy = (campaignId: number, adgroupId: number) => {
+  const handleRemoveAdgroupPolicy = (campaignId: string, adgroupId: string) => {
     const adgroup = getAdgroupById(campaignId, adgroupId);
-    if (adgroup) {
-      void apiClient.detachPolicyFromAdgroup(adgroup);
+    if (adgroup && profileId !== null) {
+      void apiClient.detachPolicyFromAdgroup(profileId, campaignId, adgroup.id);
     }
 
     setCampaigns((prev) =>
@@ -224,13 +240,19 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
   };
 
   const handleToggleAdgroupPolicyLive = (
-    campaignId: number,
-    adgroupId: number,
+    campaignId: string,
+    adgroupId: string,
     isLive: boolean,
   ) => {
     const adgroup = getAdgroupById(campaignId, adgroupId);
     if (adgroup?.policyId && profileId !== null) {
-      void apiClient.attachPolicyToAdgroup(profileId, adgroup, adgroup.policyId, isLive);
+      void apiClient.attachPolicyToAdgroup(
+        profileId,
+        campaignId,
+        adgroup.id,
+        adgroup.policyId,
+        isLive,
+      );
     }
 
     setCampaigns((prev) =>
@@ -254,10 +276,14 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
 
     if (assignPolicyContext.level === 'campaign') {
       const campaign = getCampaignById(assignPolicyContext.campaignId);
-      if (campaign && profileId !== null) {
-        campaign.adgroups.forEach((adgroup) => {
-          void apiClient.attachPolicyToAdgroup(profileId, adgroup, policyId, true);
-        });
+      if (profileId !== null && campaign) {
+        void apiClient.attachPolicyToCampaign(
+          profileId,
+          assignPolicyContext.campaignId,
+          campaign.adgroups.map((adgroup) => adgroup.id),
+          policyId,
+          true,
+        );
       }
 
       setCampaigns((prev) =>
@@ -281,7 +307,13 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
 
     const adgroup = getAdgroupById(assignPolicyContext.campaignId, assignPolicyContext.adgroupId);
     if (adgroup && profileId !== null) {
-      void apiClient.attachPolicyToAdgroup(profileId, adgroup, policyId, true);
+      void apiClient.attachPolicyToAdgroup(
+        profileId,
+        assignPolicyContext.campaignId,
+        adgroup.id,
+        policyId,
+        true,
+      );
     }
 
     setCampaigns((prev) =>

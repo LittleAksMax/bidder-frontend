@@ -11,7 +11,7 @@ export interface TokenPair {
 }
 
 export type Adgroup = {
-  id: number;
+  id: string;
   name: string;
   defaultBid: number;
   currencyCode: string;
@@ -26,7 +26,7 @@ export type CampaignGroup = {
 };
 
 export type Campaign = {
-  id: number;
+  id: string;
   name: string;
   adgroups: Adgroup[];
   policyId: string | null;
@@ -67,9 +67,10 @@ export type ChangeLogEntry = {
 };
 
 export const RULE_TYPES = [
-  { label: 'Nested List', value: 'nested' },
-  // NOTE: Future rule types can be added here
-];
+  { label: 'Nested Policy Rules', value: 'nested' },
+  { label: 'Policy Script', value: 'script' },
+  { label: 'Decision Tree', value: 'tree' },
+] as const;
 
 export const VARIABLE_TYPES = [
   { label: 'Impressions', value: 'impressions' },
@@ -87,38 +88,11 @@ export type RuleType = (typeof RULE_TYPES)[number]['value'];
 
 export type VariableType = (typeof VARIABLE_TYPES)[number]['value'];
 
-export type TerminalRuleNodeOperationType = {
-  type: 'add' | 'mul';
-  amount: {
-    neg: boolean;
-    amount: number;
-    perc: boolean;
-  };
-};
-
-export type TerminalRuleNode = {
-  type: 'terminal';
-  op: TerminalRuleNodeOperationType;
-};
-
-export type ConditionRuleNode = {
-  type: 'condition';
-  variable: VariableType;
-  min: number;
-  max: number;
-
-  if: TerminalRuleNode | ConditionRuleNode | null; // NOTE: must make sure is not null
-  else: TerminalRuleNode | ConditionRuleNode | null; // NOTE: must make sure is not null
-};
-
-export type RuleNode = TerminalRuleNode | ConditionRuleNode;
-
 export type Policy = {
   id: string;
   name: string;
-  type: RuleType;
   marketplace: string;
-  rules: RuleNode;
+  script: string;
 };
 
 export type ChangeLogFilter = {

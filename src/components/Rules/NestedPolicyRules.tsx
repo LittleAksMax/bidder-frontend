@@ -1,4 +1,4 @@
-import { Dispatch, FC, SetStateAction, useEffect } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useRef } from 'react';
 import { useEditorState, useEditorDispatch } from './EditorContext';
 import Slot from './Slot';
 import { areAllSlotsFilled } from './treeUtils';
@@ -17,19 +17,30 @@ export const NestedPolicyRules: FC<NestedPolicyRulesProps> = ({
   rule,
 }) => {
   const { root } = useEditorState();
-  const dispatch = useEditorDispatch(); // Use dispatch to update state
+  const dispatch = useEditorDispatch();
+  const rootRef = useRef<RuleNode | null>(root);
+  const syncingFromPropRef = useRef<boolean>(false);
 
-  // Initialise the editor state with the passed rule
   useEffect(() => {
-    if (rule) {
-      dispatch({ type: 'set_root', root: rule }); // Dispatch set_root action
+    rootRef.current = root;
+  }, [root]);
+
+  useEffect(() => {
+    if (rule === rootRef.current) {
+      return;
     }
+    syncingFromPropRef.current = true;
+    dispatch({ type: 'set_root', root: rule });
   }, [rule, dispatch]);
 
   useEffect(() => {
     onSlotsFilledChange(areAllSlotsFilled(root));
+    if (syncingFromPropRef.current) {
+      syncingFromPropRef.current = false;
+      return;
+    }
     onRuleChange(root);
-  }, [root, onSlotsFilledChange]);
+  }, [root, onSlotsFilledChange, onRuleChange]);
 
   return (
     <div className="nested-policy-rules">

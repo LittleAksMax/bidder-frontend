@@ -7,6 +7,12 @@ const Help: FC = () => {
       <div>
         <h1 id="nested">Nested Policy Rules</h1>
         <p>TODO: add instructions</p>
+
+        <h1 id="script">Policy Script</h1>
+        <p>TODO: add instructions</p>
+
+        <h1 id="tree">Decision Tree</h1>
+        <p>TODO: add instructions</p>
       </div>
     </Page>
   );

@@ -12,7 +12,7 @@ import './Policies.css';
 import { Policy } from '../api/types';
 
 const Policies: FC = () => {
-  const [policies, setPolicies] = useState<any[]>([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editPolicyId, setEditPolicyId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -20,25 +20,25 @@ const Policies: FC = () => {
     apiClient.getPolicies().then(setPolicies);
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string): Promise<void> => {
     setPolicies((prev) => prev.filter((p) => p.id !== id));
     await apiClient.deletePolicyByID(id);
   };
 
-  const handleEdit = (id: string) => {
+  const handleEdit = (id: string): void => {
     setEditPolicyId(id);
   };
 
-  const handleUpdatePolicy = async (id: string, name: string, rules: any): Promise<boolean> => {
+  const handleUpdatePolicy = async (id: string, name: string, script: string): Promise<boolean> => {
     // Close modal
     setEditPolicyId(null);
 
     // Optimistic update: update policy immediately in the list
     setPolicies((prev) =>
-      prev.map((policy) => (policy.id === id ? { ...policy, name, rules } : policy)),
+      prev.map((policy) => (policy.id === id ? { ...policy, name, script } : policy)),
     );
 
-    const res = await apiClient.updatePolicy(id, name, rules);
+    const res = await apiClient.updatePolicy(id, name, script);
 
     if (res) {
       // Replace with actual server response
@@ -56,15 +56,12 @@ const Policies: FC = () => {
     // Close modal in any case
     setShowCreateModal(false);
 
-    // Just-in-case avoid null rules
-    if (!p.rules) return false;
-
     // Optimistic update: add temp policy immediately
     const tempId = `temp-${Date.now()}`;
     const tempPolicy = { ...p, id: tempId };
     setPolicies((prev) => [...prev, tempPolicy]);
 
-    const res = await apiClient.createPolicy(p.name, p.type, p.marketplace, p.rules);
+    const res = await apiClient.createPolicy(p.name, p.marketplace, p.script);
 
     if (res) {
       // Replace temp policy with real one
@@ -86,9 +83,7 @@ const Policies: FC = () => {
         </Button>
       </div>
       <Card className="policies-card">
-        <Card.Header
-          className="bg-success text-white d-flex align-items-center policies-header"
-        >
+        <Card.Header className="bg-success text-white d-flex align-items-center policies-header">
           <h2 className="mb-0">Policies</h2>
         </Card.Header>
         <Card.Body className="p-0 grow d-flex flex-column position-relative policies-body">

@@ -1,10 +1,8 @@
 import { FC } from 'react';
 import { Badge } from 'react-bootstrap';
-import { RULE_TYPES, RuleType } from '../../api/types';
 import './Pills.css';
 
 interface PolicyPillProps {
-  ruleType?: RuleType;
   label?: string;
   fontSize?: string | number;
   colour?: string; // Bootstrap colour: 'info', 'success', etc.
@@ -17,9 +15,8 @@ const getPolicyPillSizeClass = (fontSize?: string | number): string => {
   return 'policy-pill-size-default';
 };
 
-const PolicyPill: FC<PolicyPillProps> = ({ ruleType, label, fontSize, colour = 'info' }) => {
-  const displayText =
-    label ?? (ruleType ? RULE_TYPES.find((r) => r.value === ruleType)?.label ?? ruleType : 'Policy');
+const PolicyPill: FC<PolicyPillProps> = ({ label, fontSize, colour = 'info' }) => {
+  const displayText = label ?? '???';
 
   return (
     <Badge

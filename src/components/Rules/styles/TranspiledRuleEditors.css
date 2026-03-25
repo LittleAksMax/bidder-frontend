@@ -1,0 +1,69 @@
+.transpiled-editor-root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.transpiled-editor-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.transpiled-editor-codeframe {
+  display: flex;
+  width: 100%;
+  height: 360px;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.transpiled-editor-codeframe:focus-within {
+  outline: 2px solid rgba(13, 110, 253, 0.25);
+  border-color: #0d6efd;
+}
+
+.transpiled-editor-gutter {
+  width: 52px;
+  flex: 0 0 52px;
+  overflow: hidden;
+  border-right: 1px solid #e5e7eb;
+  background: #f5f6f8;
+  color: #6b7280;
+  padding: 0.75rem 0.5rem;
+  text-align: right;
+  user-select: none;
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.transpiled-editor-gutter-line {
+  height: 1.26rem;
+}
+
+.transpiled-editor-textarea {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  border: none;
+  padding: 0.75rem;
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  background: #fff;
+  overflow: auto;
+  white-space: pre;
+}
+
+.transpiled-editor-textarea:focus {
+  outline: none;
+}
+
+.transpiled-editor-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.85rem;
+}

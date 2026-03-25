@@ -14,10 +14,10 @@ interface AdgroupsListProps {
   policyPillFontSize?: string;
   canViewChangeLog: boolean;
   onViewChangeLog: (adgroup: Adgroup) => void;
-  onAttachPolicy: (adgroupId: number) => void;
-  onEditPolicy: (adgroupId: number) => void;
-  onRemovePolicy: (adgroupId: number) => void;
-  onTogglePolicyLive: (adgroupId: number, isLive: boolean) => void;
+  onAttachPolicy: (adgroupId: string) => void;
+  onEditPolicy: (adgroupId: string) => void;
+  onRemovePolicy: (adgroupId: string) => void;
+  onTogglePolicyLive: (adgroupId: string, isLive: boolean) => void;
 }
 
 const AdgroupsList: FC<AdgroupsListProps> = ({
@@ -58,11 +58,7 @@ const AdgroupsList: FC<AdgroupsListProps> = ({
               <div className="adgroup-policy-section">
                 {policy ? (
                   <>
-                    <PolicyPill
-                      label={policy.name}
-                      ruleType={policy.type}
-                      fontSize={policyPillFontSize}
-                    />
+                    <PolicyPill label={policy.name} fontSize={policyPillFontSize} />
                     <Form.Check
                       id={`adgroup-live-${adgroup.id}`}
                       type="checkbox"

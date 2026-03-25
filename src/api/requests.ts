@@ -37,3 +37,17 @@ export interface RefreshRequest {
 }
 
 export type RefreshResponse = TokenPair;
+
+export type AttachPolicyRequest = {
+  adgroup_id: string;
+  campaign_id: string;
+  policy_id: string;
+  profile_id: number;
+  is_live: boolean;
+};
+
+export type DetachPolicyRequest = {
+  adgroup_id: string;
+  campaign_id: string;
+  profile_id: number;
+};

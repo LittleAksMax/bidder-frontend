@@ -12,8 +12,8 @@ interface ChangeLogModalProps {
   scope: ChangeLogScope;
   sellerId: string | null;
   profileId: number | null;
-  campaignId?: number | null;
-  adgroupId?: number | null;
+  campaignId?: string | null;
+  adgroupId?: string | null;
 }
 
 const getColor = (oldPrice: number, newPrice: number) => {
