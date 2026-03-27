@@ -61,7 +61,8 @@ const Schedules: FC = () => {
 
   const parsedDays = intervalDays.trim().length > 0 ? Number.parseInt(intervalDays, 10) : 0;
   const parsedHours = intervalHours.trim().length > 0 ? Number.parseInt(intervalHours, 10) : 0;
-  const parsedMinutes = intervalMinutes.trim().length > 0 ? Number.parseInt(intervalMinutes, 10) : 0;
+  const parsedMinutes =
+    intervalMinutes.trim().length > 0 ? Number.parseInt(intervalMinutes, 10) : 0;
   const totalIntervalMinutes = parsedDays * 24 * 60 + parsedHours * 60 + parsedMinutes;
   const hasIntervalInput =
     intervalDays.trim().length > 0 ||
@@ -127,7 +128,9 @@ const Schedules: FC = () => {
   };
 
   const handleDeleteSchedule = async (profileId: number): Promise<void> => {
-    const scheduleIndex = schedules.findIndex((schedule) => schedule.profile.profileId === profileId);
+    const scheduleIndex = schedules.findIndex(
+      (schedule) => schedule.profile.profileId === profileId,
+    );
     if (scheduleIndex < 0) {
       return;
     }

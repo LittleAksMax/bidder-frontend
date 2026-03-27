@@ -37,6 +37,7 @@ class ApiClient {
     US: {},
     FE: {},
   };
+  private cachedAuthenticatedRegions: string[] | null = null;
 
   private clearCampaignCache(): void {
     this.cachedCampaigns = {
@@ -693,6 +694,25 @@ class ApiClient {
 
     const redirectUrl = data.redirectUrl ?? null;
     return redirectUrl;
+  }
+
+  async getAuthenticatedRegions(): Promise<string[]> {
+    if (this.cachedAuthenticatedRegions) {
+      return this.cachedAuthenticatedRegions;
+    }
+
+    const [succ, data, err] = await createApiRequest({
+      endpoint: '/user/tokens',
+      method: 'GET',
+      ...(await getAuthKeyParam()),
+    });
+    if (!succ || err || !data) {
+      console.error('Something went wrong while fetching authenticated regions');
+      return [];
+    }
+
+    this.cachedAuthenticatedRegions = data as string[];
+    return this.cachedAuthenticatedRegions;
   }
 }
 
