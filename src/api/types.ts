@@ -49,6 +49,12 @@ export type Profile = {
   accountType: string;
 };
 
+export type ScheduledJob = {
+  profile: Profile;
+  dueAt: Date;
+  interval: number;
+};
+
 export type AttachedPolicyDTO = {
   campaignId: string;
   adgroupId: string;

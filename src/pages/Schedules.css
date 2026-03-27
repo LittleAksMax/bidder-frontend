@@ -1,0 +1,80 @@
+.schedules-toolbar {
+  gap: 0.5rem;
+}
+
+.schedules-card {
+  width: 100%;
+  height: 93%;
+  display: flex;
+  flex-direction: column;
+}
+
+.schedules-header {
+  height: 5%;
+  min-height: 50px;
+}
+
+.schedules-body {
+  flex: 1 1 90%;
+  min-height: 0;
+}
+
+.schedules-table-scroll {
+  flex: 1;
+  overflow: auto;
+}
+
+.schedules-table {
+  width: auto;
+}
+
+.schedules-table th,
+.schedules-table td {
+  padding: 0.4rem 0.6rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.schedules-delete-cell {
+  width: 1%;
+}
+
+.schedules-delete-btn {
+  transform: scale(0.9);
+}
+
+.schedules-footer {
+  height: 5%;
+  min-height: 56px;
+}
+
+.schedules-footer-actions {
+  background: #f8f9fa;
+}
+
+.schedules-create-form {
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+}
+
+.schedules-create-select {
+  width: 88px;
+  min-width: 88px;
+}
+
+.schedules-field-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.schedules-create-label {
+  font-size: 0.875rem;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.schedules-create-duration {
+  width: 70px;
+  min-width: 70px;
+}

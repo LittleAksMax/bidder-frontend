@@ -7,6 +7,7 @@ import {
   ProfileGroup,
   CampaignGroup,
   AttachedPolicyDTO,
+  ScheduledJob,
 } from './types';
 import { createApiRequest } from './client';
 import { authClient } from './AuthClient';
@@ -45,27 +46,13 @@ class ApiClient {
     };
   }
 
-  private normaliseId(value: unknown): string {
-    const normalised = String(value ?? '').trim();
-    if (!normalised) {
-      return '';
-    }
-
-    const lowerValue = normalised.toLowerCase();
-    if (lowerValue === 'null' || lowerValue === 'undefined' || normalised === '0') {
-      return '';
-    }
-
-    return normalised;
-  }
-
   private parseAttachedPolicies(data: any[]): AttachedPolicyDTO[] {
     return data
       .map((item) => ({
-        campaignId: this.normaliseId(item.campaign_id ?? item.campaignId),
-        adgroupId: this.normaliseId(item.adgroup_id ?? item.adgroupId),
-        policyId: this.normaliseId(item.policy_id ?? item.policyId),
-        isLive: Boolean(item.is_live ?? item.isLive ?? false),
+        campaignId: item.campaign_id as string,
+        adgroupId: item.adgroup_id as string,
+        policyId: item.policy_id as string,
+        isLive: item.is_live ?? false,
       }))
       .filter(
         (item) =>
@@ -138,6 +125,106 @@ class ApiClient {
     return sellerProfiles[0]!.profiles;
   }
 
+  async getScheduledJobs(): Promise<ScheduledJob[]> {
+    await this.getSellerProfiles();
+
+    const [succ, data, err] = await createApiRequest({
+      endpoint: '/user/schedules',
+      method: 'GET',
+      ...(await getAuthKeyParam()),
+    });
+
+    if (err || !succ || !data) {
+      if (err) {
+        console.error('[apiClient] Failed to fetch scheduled jobs', err);
+      }
+      return [];
+    }
+
+    const activeSellers = await this.getActiveSellers();
+    for (const seller of activeSellers) {
+      await this.getProfilesForSeller(seller);
+    }
+
+    const profilesById = Object.fromEntries(
+      this.cachedProfiles!.flatMap(({ profiles }) =>
+        profiles.map((p) => [p.profileId, p] as const),
+      ),
+    ) as Record<number, Profile>;
+
+    return (data as any[]).map((s) => ({
+      profile: profilesById[Number.parseInt(s.profile_id)]!,
+      dueAt: new Date(s.due_at),
+      interval: Number.parseInt(s.interval_minutes),
+    }));
+  }
+
+  async createSchedule(profileId: number, intervalMinutes: number): Promise<ScheduledJob | null> {
+    await this.getSellerProfiles();
+
+    const [succ, data, err] = await createApiRequest({
+      endpoint: '/user/schedules',
+      method: 'POST',
+      ...(await getAuthKeyParam()),
+      body: {
+        profile_id: profileId,
+        interval_minutes: intervalMinutes,
+      },
+    });
+
+    if (err || !succ) {
+      if (err) {
+        console.error('[apiClient] Failed to create schedule', err);
+      }
+      return null;
+    }
+
+    if (!data) {
+      console.error('No data returned');
+      return null;
+    }
+
+    const profilesById = Object.fromEntries(
+      this.cachedProfiles!.flatMap(({ profiles }) =>
+        profiles.map((profile) => [profile.profileId, profile] as const),
+      ),
+    ) as Record<number, Profile>;
+
+    const resolvedProfileId = Number.parseInt(data.profile_id as string);
+    const resolvedInterval = Number.parseInt(data.interval_minutes as string);
+    const dueAtValue = data.due_at as string;
+
+    if (!profilesById[resolvedProfileId]) {
+      return null;
+    }
+
+    return {
+      profile: profilesById[resolvedProfileId],
+      dueAt: new Date(dueAtValue as string),
+      interval: resolvedInterval,
+    };
+  }
+
+  async deleteSchedule(profileId: number): Promise<boolean> {
+    const [succ, _, err] = await createApiRequest({
+      endpoint: '/user/schedules',
+      method: 'DELETE',
+      ...(await getAuthKeyParam()),
+      body: {
+        profile_id: profileId,
+      },
+    });
+
+    if (err || !succ) {
+      if (err) {
+        console.error('[apiClient] Failed to delete schedule', err);
+      }
+      return false;
+    }
+
+    return true;
+  }
+
   async getCampaigns(region: string, profileId: number): Promise<Campaign[]> {
     const regionCache = this.cachedCampaigns[region];
     if (regionCache && regionCache[profileId]) {
@@ -196,7 +283,7 @@ class ApiClient {
             (resolvedPolicyId !== null ? campaignIsPolicyLive : false)) as boolean);
 
         return {
-          id: this.normaliseId(a.id),
+          id: a.id as string,
           name: a.name,
           defaultBid: a.default_bid ?? a.defaultBid,
           currencyCode: a.currency_code ?? a.currencyCode,
@@ -217,7 +304,7 @@ class ApiClient {
           : (campaignAttachment?.isLive ?? campaignIsPolicyLive);
 
       return {
-        id: this.normaliseId(c.id),
+        id: c.id as string,
         name: c.name,
         policyId: campaignAttachment?.policyId ?? derivedCampaignPolicyId ?? campaignPolicyId,
         isPolicyLive: derivedCampaignIsLive,

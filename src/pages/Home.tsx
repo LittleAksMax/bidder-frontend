@@ -128,9 +128,14 @@ const Home: FC = () => {
             disabled={selectedSeller === null}
           />
         </div>
-        <Button variant="outline-primary" size="sm" onClick={() => navigate('/policies')}>
-          Manage Policies
-        </Button>
+        <div className="d-flex gap-2">
+          <Button variant="outline-primary" size="sm" onClick={() => navigate('/schedules')}>
+            Schedules
+          </Button>
+          <Button variant="outline-primary" size="sm" onClick={() => navigate('/policies')}>
+            Manage Policies
+          </Button>
+        </div>
       </div>
       <CampaignsListContainer
         region={selectedProfile?.region ?? null}

@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import Help from './pages/Help';
+import Schedules from './pages/Schedules';
 
 const App: FC = () => {
   return (
@@ -25,6 +26,14 @@ const App: FC = () => {
           element={
             <RequireAuth>
               <Policies />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/schedules"
+          element={
+            <RequireAuth>
+              <Schedules />
             </RequireAuth>
           }
         />
