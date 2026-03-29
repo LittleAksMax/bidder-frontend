@@ -43,3 +43,20 @@ export const CreateIcon: FC<IconProps> = ({ size = 20, className, ...props }) =>
     <path d={ICON_PATHS.create[1]} {...strokeProps} strokeLinecap="round" />
   </svg>
 );
+
+export const DoubleChevronIcon: FC<IconProps> = ({ size = 20, className, ...props }) => (
+  <svg width={size} height={size} className={className} {...baseSvgProps} {...props}>
+    <path
+      d={ICON_PATHS.doubleChevron[0]}
+      {...strokeProps}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d={ICON_PATHS.doubleChevron[1]}
+      {...strokeProps}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);

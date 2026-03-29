@@ -51,8 +51,10 @@ export type Profile = {
 
 export type ScheduledJob = {
   profile: Profile;
+  sellerName: string;
   dueAt: Date;
   interval: number;
+  state: string;
 };
 
 export type AttachedPolicyDTO = {
@@ -62,15 +64,25 @@ export type AttachedPolicyDTO = {
   isLive: boolean;
 };
 
-export type ChangeLogEntry = {
-  profileId: number;
-  campaignId: string;
-  adgroup: string;
+export type UserLogResponse = {
+  log: string;
+  timestamp: Date;
+};
+
+export type UserLogsPageResponse = {
+  logs: UserLogResponse[];
+  totalPages: number;
+};
+
+export type BidResponse = {
+  adgroupId: string;
   oldPrice: number;
   newPrice: number;
-  timestamp: Date;
-  policyName: string;
+  changeDate: Date;
+  isLive: boolean;
 };
+
+export type ChangeLogEntry = BidResponse;
 
 export const RULE_TYPES = [
   { label: 'Nested Policy Rules', value: 'nested' },
@@ -114,6 +126,6 @@ export type Pagination = {
 export type ChangeLogQuery = ChangeLogFilter & Pagination;
 
 export type ChangeLogResult = {
-  entries: ChangeLogEntry[];
+  entries: BidResponse[];
   total: number;
 };

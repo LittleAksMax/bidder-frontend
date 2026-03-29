@@ -25,22 +25,60 @@
 }
 
 .schedules-table {
-  width: auto;
+  width: max-content;
+  min-width: 100%;
 }
 
 .schedules-table th,
 .schedules-table td {
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.85rem;
+  max-width: 20em;
   white-space: nowrap;
   vertical-align: middle;
 }
 
+.schedules-table th:nth-child(4),
+.schedules-table th:nth-child(5),
+.schedules-table th:nth-child(6),
+.schedules-table td:nth-child(4),
+.schedules-table td:nth-child(5),
+.schedules-table td:nth-child(6) {
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  text-align: center;
+}
+
+.schedules-table th:nth-child(3),
+.schedules-table td:nth-child(3) {
+  padding-right: 0.45rem;
+}
+
+.schedules-table th:nth-child(4),
+.schedules-table td:nth-child(4) {
+  padding-left: 0.3rem;
+}
+
 .schedules-delete-cell {
   width: 1%;
+  white-space: nowrap;
 }
 
 .schedules-delete-btn {
   transform: scale(0.9);
+}
+
+.schedules-expand-btn {
+  transform: scale(0.9);
+}
+
+.schedules-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.schedules-view-log-btn {
+  font-size: 0.82rem !important;
 }
 
 .schedules-footer {
@@ -60,6 +98,11 @@
 .schedules-create-select {
   width: 88px;
   min-width: 88px;
+}
+
+.schedules-create-seller-select {
+  width: 170px;
+  min-width: 170px;
 }
 
 .schedules-field-group {

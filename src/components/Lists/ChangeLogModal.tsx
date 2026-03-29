@@ -1,7 +1,7 @@
 import { FC, useEffect, useMemo, useState } from 'react';
 import { Modal, Button, Table, Form } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { ChangeLogEntry } from '../../api/types';
+import { BidResponse } from '../../api/types';
 import './ChangeLogModal.css';
 
 export type ChangeLogScope = 'seller' | 'profile' | 'campaign' | 'adgroup';
@@ -14,6 +14,7 @@ interface ChangeLogModalProps {
   profileId: number | null;
   campaignId?: string | null;
   adgroupId?: string | null;
+  adgroupNamesById?: Record<string, string> | null;
 }
 
 const getColor = (oldPrice: number, newPrice: number) => {
@@ -35,6 +36,14 @@ const getTitle = (scope: ChangeLogScope): string => {
   return 'Ad Group Change Log';
 };
 
+const getAdgroupLabel = (
+  adgroupId: string,
+  adgroupNamesById?: Record<string, string> | null,
+): string => {
+  const adgroupName = adgroupNamesById?.[adgroupId];
+  return adgroupName ? `${adgroupName} (${adgroupId})` : adgroupId;
+};
+
 const ChangeLogModal: FC<ChangeLogModalProps> = ({
   show,
   onHide,
@@ -43,8 +52,9 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({
   profileId,
   campaignId,
   adgroupId,
+  adgroupNamesById,
 }) => {
-  const [logs, setLogs] = useState<ChangeLogEntry[]>([]);
+  const [logs, setLogs] = useState<BidResponse[]>([]);
   const [page, setPage] = useState(1);
   const [days, setDays] = useState(30);
   const pageSize = 25;
@@ -138,21 +148,25 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({
               <th>Old Price</th>
               <th>New Price</th>
               <th>Time</th>
-              <th>Policy</th>
+              <th>Live</th>
             </tr>
           </thead>
           <tbody>
             {pagedLogs.length > 0 ? (
               pagedLogs.map((log) => (
-                <tr key={log.timestamp.toString() + log.adgroup.toString()}>
-                  <td>{log.adgroup}</td>
-                  <td>{log.oldPrice}</td>
-                  <td className={getColor(log.oldPrice, log.newPrice)}>
-                    {getPrefix(log.oldPrice, log.newPrice)}
-                    {log.newPrice}
+                <tr key={`${log.changeDate.toISOString()}-${log.adgroupId}`}>
+                  <td>{getAdgroupLabel(log.adgroupId, adgroupNamesById)}</td>
+                  <td>
+                    <code>{log.oldPrice}</code>
                   </td>
-                  <td>{new Date(log.timestamp).toLocaleString()}</td>
-                  <td>{log.policyName}</td>
+                  <td className={getColor(log.oldPrice, log.newPrice)}>
+                    <code>
+                      {getPrefix(log.oldPrice, log.newPrice)}
+                      {log.newPrice}
+                    </code>
+                  </td>
+                  <td>{new Date(log.changeDate).toLocaleString()}</td>
+                  <td>{log.isLive ? 'Yes' : 'No'}</td>
                 </tr>
               ))
             ) : (

@@ -109,6 +109,24 @@
   color: #fff !important;
   stroke: #fff !important;
 }
+
+.icon-btn-blue {
+  color: #0d6efd !important;
+}
+.icon-btn-blue svg {
+  color: #0d6efd !important;
+  stroke: #0d6efd !important;
+}
+.icon-btn-blue:hover,
+.icon-btn-blue:focus {
+  background: #0d6efd !important;
+  color: #fff !important;
+}
+.icon-btn-blue:hover svg,
+.icon-btn-blue:focus svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 .modal-backdrop {
   position: fixed;
   top: 0;

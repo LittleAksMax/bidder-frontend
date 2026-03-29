@@ -25,6 +25,7 @@ type ChangeLogContext = {
   scope: ChangeLogScope;
   campaignId?: string;
   adgroupId?: string;
+  adgroupNamesById?: Record<string, string>;
 };
 
 type AssignPolicyContext =
@@ -138,6 +139,15 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
     return campaign.adgroups.find((adgroup) => adgroup.id === adgroupId) ?? null;
   };
 
+  const getAdgroupNamesById = (campaignId: string): Record<string, string> => {
+    const campaign = getCampaignById(campaignId);
+    if (!campaign) {
+      return {};
+    }
+
+    return Object.fromEntries(campaign.adgroups.map((adgroup) => [adgroup.id, adgroup.name]));
+  };
+
   const handleToggle = (id: string) => {
     setExpanded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
@@ -157,11 +167,7 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
         .filter((adgroup) => Boolean(adgroup.policyId))
         .map((adgroup) => adgroup.id);
 
-      void apiClient.detachPolicyFromCampaign(
-        profileId,
-        campaign.id,
-        attachedAdgroupIds,
-      );
+      void apiClient.detachPolicyFromCampaign(profileId, campaign.id, attachedAdgroupIds);
     }
 
     setCampaigns((prev) =>
@@ -375,6 +381,7 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
                             setChangeLogContext({
                               scope: 'campaign',
                               campaignId: campaign.id,
+                              adgroupNamesById: getAdgroupNamesById(campaign.id),
                             })
                           }
                           disabled={!hasSellerAndProfile}
@@ -433,6 +440,7 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
                         scope: 'adgroup',
                         campaignId: campaign.id,
                         adgroupId: adgroup.id,
+                        adgroupNamesById: getAdgroupNamesById(campaign.id),
                       })
                     }
                     onAttachPolicy={(adgroupId) =>
@@ -481,6 +489,7 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
         profileId={profileId ?? null}
         campaignId={changeLogContext?.campaignId ?? null}
         adgroupId={changeLogContext?.adgroupId ?? null}
+        adgroupNamesById={changeLogContext?.adgroupNamesById ?? null}
       />
     </>
   );

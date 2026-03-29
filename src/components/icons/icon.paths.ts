@@ -1,4 +1,4 @@
-export type IconName = 'delete' | 'edit' | 'create';
+export type IconName = 'delete' | 'edit' | 'create' | 'doubleChevron';
 
 export const ICON_PATHS: Record<IconName, string[]> = {
   delete: [
@@ -17,4 +17,6 @@ export const ICON_PATHS: Record<IconName, string[]> = {
   ],
 
   create: ['M12 5v14', 'M5 12h14'],
+
+  doubleChevron: ['M7 16l5-5 5 5', 'M7 11l5-5 5 5'],
 };

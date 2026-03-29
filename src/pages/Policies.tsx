@@ -13,14 +13,63 @@ import { Policy } from '../api/types';
 
 const Policies: FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
+  const [undeletablePolicyIds, setUndeletablePolicyIds] = useState<Set<string>>(new Set());
+  const [hasLoadedDeleteConstraints, setHasLoadedDeleteConstraints] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editPolicyId, setEditPolicyId] = useState<string | null>(null);
   const navigate = useNavigate();
+
   useEffect(() => {
-    apiClient.getPolicies().then(setPolicies);
+    let isMounted = true;
+
+    const loadPoliciesPageData = async (): Promise<void> => {
+      const attachedPolicyIdsPromise = (async (): Promise<Set<string>> => {
+        const sellerProfiles = await apiClient.getSellerProfiles();
+        const profileIds = sellerProfiles.flatMap((seller) =>
+          seller.profiles.map((profile) => profile.profileId),
+        );
+        const attachedPoliciesByProfile = await Promise.all(
+          profileIds.map((profileId) => apiClient.getAttachedPolicies(profileId)),
+        );
+
+        const nextUndeletablePolicyIds = new Set<string>();
+        attachedPoliciesByProfile.forEach((attachedPolicies) => {
+          attachedPolicies.forEach((attachedPolicy) => {
+            if (attachedPolicy.adgroupId.length > 0 && attachedPolicy.policyId.length > 0) {
+              nextUndeletablePolicyIds.add(attachedPolicy.policyId);
+            }
+          });
+        });
+
+        return nextUndeletablePolicyIds;
+      })();
+
+      const [loadedPolicies, loadedUndeletablePolicyIds] = await Promise.all([
+        apiClient.getPolicies(),
+        attachedPolicyIdsPromise,
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setPolicies(loadedPolicies);
+      setUndeletablePolicyIds(loadedUndeletablePolicyIds);
+      setHasLoadedDeleteConstraints(true);
+    };
+
+    void loadPoliciesPageData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleDelete = async (id: string): Promise<void> => {
+    if (!hasLoadedDeleteConstraints || undeletablePolicyIds.has(id)) {
+      return;
+    }
+
     setPolicies((prev) => prev.filter((p) => p.id !== id));
     await apiClient.deletePolicyByID(id);
   };
@@ -89,7 +138,13 @@ const Policies: FC = () => {
         <Card.Body className="p-0 grow d-flex flex-column position-relative policies-body">
           <div className="policies-body-inner">
             <div className="policies-list-scroll">
-              <PoliciesList policies={policies} onEdit={handleEdit} onDelete={handleDelete} />
+              <PoliciesList
+                policies={policies}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                undeletablePolicyIds={undeletablePolicyIds}
+                hasLoadedDeleteConstraints={hasLoadedDeleteConstraints}
+              />
             </div>
           </div>
 

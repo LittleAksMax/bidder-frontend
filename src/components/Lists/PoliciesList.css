@@ -12,3 +12,9 @@
 .policies-list-actions {
   gap: 0.5rem;
 }
+
+.policies-list-in-use-pill {
+  align-self: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}

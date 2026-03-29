@@ -1,21 +1,57 @@
-import { FC, useEffect, useMemo, useState } from 'react';
+import { CSSProperties, FC, useEffect, useMemo, useState } from 'react';
 import { Button, Card, Form, Table } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/ApiClient';
-import { Profile, ScheduledJob } from '../api/types';
+import { ProfileGroup, ScheduledJob } from '../api/types';
 import CreateButton from '../components/buttons/CreateButton';
 import DeleteButton from '../components/buttons/DeleteButton';
+import DoubleChevronButton from '../components/buttons/DoubleChevronButton';
+import ViewChangeLogButton from '../components/buttons/ViewChangeLogButton';
+import UserLogsModal from '../components/Lists/UserLogsModal';
 import Page from './Page';
 import './Schedules.css';
+
+const getScheduleStateStyle = (state: string): CSSProperties => {
+  if (state === 'FAILED') {
+    return { color: '#dc3545' };
+  }
+
+  if (state === 'PROCESSING') {
+    return { color: '#f0ad4e' };
+  }
+
+  return { color: 'black' };
+};
+
+const formatDueAt = (date: Date): string => {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear().toString();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+
+  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+};
+
+const sortSchedulesByDueAt = (jobs: ScheduledJob[]): ScheduledJob[] =>
+  [...jobs].sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
+
+type UserLogsContext = {
+  profileId: number;
+  profileLabel: string;
+};
 
 const Schedules: FC = () => {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState<ScheduledJob[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [sellerGroups, setSellerGroups] = useState<ProfileGroup[]>([]);
+  const [selectedSellerName, setSelectedSellerName] = useState('');
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const [intervalDays, setIntervalDays] = useState('');
   const [intervalHours, setIntervalHours] = useState('');
   const [intervalMinutes, setIntervalMinutes] = useState('');
+  const [userLogsContext, setUserLogsContext] = useState<UserLogsContext | null>(null);
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -29,8 +65,8 @@ const Schedules: FC = () => {
       ]);
 
       if (isMounted) {
-        setSchedules(scheduledJobs);
-        setProfiles(sellerProfiles.flatMap((seller) => seller.profiles));
+        setSchedules(sortSchedulesByDueAt(scheduledJobs));
+        setSellerGroups(sellerProfiles);
         setLoading(false);
       }
     };
@@ -42,6 +78,7 @@ const Schedules: FC = () => {
     };
   }, []);
 
+  const profiles = useMemo(() => sellerGroups.flatMap((seller) => seller.profiles), [sellerGroups]);
   const unscheduledProfiles = useMemo(
     () =>
       profiles.filter(
@@ -50,14 +87,38 @@ const Schedules: FC = () => {
       ),
     [profiles, schedules],
   );
+  const unscheduledSellerGroups = useMemo(() => {
+    const unscheduledProfileIds = new Set(unscheduledProfiles.map((profile) => profile.profileId));
+
+    return sellerGroups
+      .map((sellerGroup) => ({
+        sellerName: sellerGroup.name,
+        profiles: sellerGroup.profiles.filter((profile) =>
+          unscheduledProfileIds.has(profile.profileId),
+        ),
+      }))
+      .filter((sellerGroup) => sellerGroup.profiles.length > 0);
+  }, [sellerGroups, unscheduledProfiles]);
+  const sortedSchedules = useMemo(() => sortSchedulesByDueAt(schedules), [schedules]);
+
+  const selectedSellerStillAvailable = unscheduledSellerGroups.some(
+    (sellerGroup) => sellerGroup.sellerName === selectedSellerName,
+  );
+  const effectiveSelectedSellerName = selectedSellerStillAvailable
+    ? selectedSellerName
+    : (unscheduledSellerGroups[0]?.sellerName ?? '');
+  const sellerFilteredProfiles =
+    unscheduledSellerGroups.find(
+      (sellerGroup) => sellerGroup.sellerName === effectiveSelectedSellerName,
+    )?.profiles ?? [];
 
   const selectedProfileIdValue = Number.parseInt(selectedProfileId, 10);
-  const selectedStillAvailable = unscheduledProfiles.some(
+  const selectedStillAvailable = sellerFilteredProfiles.some(
     (profile) => profile.profileId === selectedProfileIdValue,
   );
   const effectiveSelectedProfileId = selectedStillAvailable
     ? selectedProfileId
-    : (unscheduledProfiles[0]?.profileId.toString() ?? '');
+    : (sellerFilteredProfiles[0]?.profileId.toString() ?? '');
 
   const parsedDays = intervalDays.trim().length > 0 ? Number.parseInt(intervalDays, 10) : 0;
   const parsedHours = intervalHours.trim().length > 0 ? Number.parseInt(intervalHours, 10) : 0;
@@ -78,7 +139,11 @@ const Schedules: FC = () => {
     totalIntervalMinutes > 0;
 
   const canCreate =
-    hasIntervalInput && intervalIsValid && effectiveSelectedProfileId.length > 0 && !creating;
+    hasIntervalInput &&
+    intervalIsValid &&
+    effectiveSelectedSellerName.length > 0 &&
+    effectiveSelectedProfileId.length > 0 &&
+    !creating;
 
   const handleCreateSchedule = async (): Promise<void> => {
     if (!canCreate) {
@@ -93,6 +158,7 @@ const Schedules: FC = () => {
     }
 
     const profile =
+      sellerFilteredProfiles.find((candidate) => candidate.profileId === profileId) ??
       unscheduledProfiles.find((candidate) => candidate.profileId === profileId) ??
       profiles.find((candidate) => candidate.profileId === profileId);
 
@@ -100,10 +166,15 @@ const Schedules: FC = () => {
       return;
     }
 
+    const optimisticDueAt = new Date();
+    optimisticDueAt.setMinutes(optimisticDueAt.getMinutes() + interval);
+
     const optimisticSchedule: ScheduledJob = {
       profile,
-      dueAt: new Date(Date.now() + interval * 60_000),
+      sellerName: effectiveSelectedSellerName,
+      dueAt: optimisticDueAt,
       interval,
+      state: 'PROCESSING',
     };
 
     setSchedules((prev) => [...prev, optimisticSchedule]);
@@ -112,7 +183,11 @@ const Schedules: FC = () => {
     setIntervalMinutes('');
     setCreating(true);
 
-    const createdSchedule = await apiClient.createSchedule(profileId, interval);
+    const createdSchedule = await apiClient.createSchedule(
+      profileId,
+      interval,
+      effectiveSelectedSellerName,
+    );
     setCreating(false);
 
     if (!createdSchedule) {
@@ -154,6 +229,30 @@ const Schedules: FC = () => {
     });
   };
 
+  const handlePrioritiseSchedule = async (profileId: number): Promise<void> => {
+    setLoading(true);
+
+    try {
+      const prioritisedDueAt = await apiClient.prioritiseSchedule(profileId);
+
+      if (!prioritisedDueAt) {
+        return;
+      }
+
+      setSchedules((prev) =>
+        sortSchedulesByDueAt(
+          prev.map((schedule) =>
+            schedule.profile.profileId === profileId
+              ? { ...schedule, dueAt: prioritisedDueAt }
+              : schedule,
+          ),
+        ),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Page showSettings loading={loading}>
       <div className="w-100 d-flex justify-content-end mb-3 schedules-toolbar">
@@ -170,23 +269,25 @@ const Schedules: FC = () => {
             <Table striped hover responsive className="mb-0 schedules-table">
               <thead>
                 <tr>
+                  <th>Seller Name</th>
                   <th>Profile</th>
                   <th>Due Date</th>
                   <th>Days</th>
                   <th>Hours</th>
                   <th>Minutes</th>
+                  <th>State</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {schedules.length === 0 ? (
+                {sortedSchedules.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-muted">
+                    <td colSpan={8} className="text-center py-4 text-muted">
                       No schedules found.
                     </td>
                   </tr>
                 ) : (
-                  schedules.map((schedule) => {
+                  sortedSchedules.map((schedule) => {
                     const intervalDaysValue = Math.floor(schedule.interval / (24 * 60));
                     const remainingAfterDays = schedule.interval % (24 * 60);
                     const intervalHoursValue = Math.floor(remainingAfterDays / 60);
@@ -194,16 +295,38 @@ const Schedules: FC = () => {
 
                     return (
                       <tr key={`${schedule.profile.profileId}`}>
+                        <td>{schedule.sellerName}</td>
                         <td>{schedule.profile.countryCode}</td>
-                        <td>{schedule.dueAt.toISOString()}</td>
+                        <td>{formatDueAt(schedule.dueAt)}</td>
                         <td>{intervalDaysValue}</td>
                         <td>{intervalHoursValue}</td>
                         <td>{intervalMinutesValue}</td>
+                        <td style={{ ...getScheduleStateStyle(schedule.state) }}>
+                          <strong>{schedule.state}</strong>
+                        </td>
                         <td className="schedules-delete-cell">
-                          <DeleteButton
-                            className="schedules-delete-btn"
-                            onClick={() => void handleDeleteSchedule(schedule.profile.profileId)}
-                          />
+                          <div className="schedules-row-actions">
+                            <ViewChangeLogButton
+                              className="schedules-view-log-btn"
+                              onClick={() =>
+                                setUserLogsContext({
+                                  profileId: schedule.profile.profileId,
+                                  profileLabel: `${schedule.sellerName} - ${schedule.profile.countryCode}`,
+                                })
+                              }
+                              buttonText="Schedule Logs"
+                            />
+                            <DoubleChevronButton
+                              className="schedules-expand-btn"
+                              onClick={() =>
+                                void handlePrioritiseSchedule(schedule.profile.profileId)
+                              }
+                            />
+                            <DeleteButton
+                              className="schedules-delete-btn"
+                              onClick={() => void handleDeleteSchedule(schedule.profile.profileId)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     );
@@ -223,6 +346,33 @@ const Schedules: FC = () => {
               }}
             >
               <div className="schedules-field-group">
+                <Form.Label htmlFor="schedule-seller" className="mb-0 schedules-create-label">
+                  Seller
+                </Form.Label>
+                <Form.Select
+                  id="schedule-seller"
+                  size="sm"
+                  className="schedules-create-seller-select"
+                  value={effectiveSelectedSellerName}
+                  onChange={(event) => {
+                    setSelectedSellerName(event.target.value);
+                    setSelectedProfileId('');
+                  }}
+                  disabled={creating || unscheduledSellerGroups.length === 0}
+                >
+                  {unscheduledSellerGroups.length === 0 ? (
+                    <option value="">No unscheduled sellers</option>
+                  ) : (
+                    unscheduledSellerGroups.map((sellerGroup) => (
+                      <option key={sellerGroup.sellerName} value={sellerGroup.sellerName}>
+                        {sellerGroup.sellerName}
+                      </option>
+                    ))
+                  )}
+                </Form.Select>
+              </div>
+
+              <div className="schedules-field-group">
                 <Form.Label htmlFor="schedule-profile" className="mb-0 schedules-create-label">
                   Profile
                 </Form.Label>
@@ -232,12 +382,12 @@ const Schedules: FC = () => {
                   className="schedules-create-select"
                   value={effectiveSelectedProfileId}
                   onChange={(event) => setSelectedProfileId(event.target.value)}
-                  disabled={creating || unscheduledProfiles.length === 0}
+                  disabled={creating || sellerFilteredProfiles.length === 0}
                 >
-                  {unscheduledProfiles.length === 0 ? (
+                  {sellerFilteredProfiles.length === 0 ? (
                     <option value="">No unscheduled profiles</option>
                   ) : (
-                    unscheduledProfiles.map((profile) => (
+                    sellerFilteredProfiles.map((profile) => (
                       <option key={profile.profileId} value={profile.profileId}>
                         {profile.countryCode}
                       </option>
@@ -260,7 +410,7 @@ const Schedules: FC = () => {
                   placeholder="0"
                   value={intervalDays}
                   onChange={(event) => setIntervalDays(event.target.value)}
-                  disabled={creating || unscheduledProfiles.length === 0}
+                  disabled={creating || sellerFilteredProfiles.length === 0}
                 />
               </div>
 
@@ -278,7 +428,7 @@ const Schedules: FC = () => {
                   placeholder="0"
                   value={intervalHours}
                   onChange={(event) => setIntervalHours(event.target.value)}
-                  disabled={creating || unscheduledProfiles.length === 0}
+                  disabled={creating || sellerFilteredProfiles.length === 0}
                 />
               </div>
 
@@ -296,7 +446,7 @@ const Schedules: FC = () => {
                   placeholder="0"
                   value={intervalMinutes}
                   onChange={(event) => setIntervalMinutes(event.target.value)}
-                  disabled={creating || unscheduledProfiles.length === 0}
+                  disabled={creating || sellerFilteredProfiles.length === 0}
                 />
               </div>
 
@@ -305,6 +455,14 @@ const Schedules: FC = () => {
           </div>
         </Card.Footer>
       </Card>
+      {userLogsContext ? (
+        <UserLogsModal
+          show
+          onHide={() => setUserLogsContext(null)}
+          profileId={userLogsContext.profileId}
+          profileLabel={userLogsContext.profileLabel}
+        />
+      ) : null}
     </Page>
   );
 };

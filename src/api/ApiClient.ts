@@ -3,7 +3,9 @@ import {
   Campaign,
   Adgroup,
   Policy,
-  ChangeLogEntry,
+  BidResponse,
+  UserLogResponse,
+  UserLogsPageResponse,
   ProfileGroup,
   CampaignGroup,
   AttachedPolicyDTO,
@@ -153,14 +155,24 @@ class ApiClient {
       ),
     ) as Record<number, Profile>;
 
-    return (data as any[]).map((s) => ({
-      profile: profilesById[Number.parseInt(s.profile_id)]!,
-      dueAt: new Date(s.due_at),
-      interval: Number.parseInt(s.interval_minutes),
-    }));
+    return (data as any[]).map((s) => {
+      const resolvedProfileId = Number.parseInt(s.profile_id as string);
+
+      return {
+        profile: profilesById[resolvedProfileId]!,
+        sellerName: s.seller_name as string,
+        dueAt: new Date(s.due_at),
+        interval: Number.parseInt(s.interval_minutes),
+        state: s.state as string,
+      };
+    });
   }
 
-  async createSchedule(profileId: number, intervalMinutes: number): Promise<ScheduledJob | null> {
+  async createSchedule(
+    profileId: number,
+    intervalMinutes: number,
+    sellerName: string,
+  ): Promise<ScheduledJob | null> {
     await this.getSellerProfiles();
 
     const [succ, data, err] = await createApiRequest({
@@ -170,6 +182,7 @@ class ApiClient {
       body: {
         profile_id: profileId,
         interval_minutes: intervalMinutes,
+        seller_name: sellerName,
       },
     });
 
@@ -201,8 +214,10 @@ class ApiClient {
 
     return {
       profile: profilesById[resolvedProfileId],
+      sellerName: data.seller_name as string,
       dueAt: new Date(dueAtValue as string),
       interval: resolvedInterval,
+      state: data.state as string,
     };
   }
 
@@ -224,6 +239,23 @@ class ApiClient {
     }
 
     return true;
+  }
+
+  async prioritiseSchedule(profileId: number): Promise<Date | null> {
+    const [succ, data, err] = await createApiRequest({
+      endpoint: `/user/schedules/prioritise/${profileId}`,
+      method: 'POST',
+      ...(await getAuthKeyParam()),
+    });
+
+    if (err || !succ || !data) {
+      if (err) {
+        console.error('[apiClient] Failed to prioritise schedule', err);
+      }
+      return null;
+    }
+
+    return new Date(data.due_at as string);
   }
 
   async getCampaigns(region: string, profileId: number): Promise<Campaign[]> {
@@ -591,12 +623,12 @@ class ApiClient {
     return endpoint;
   }
 
-  private async fetchBidChanges(
+  private async fetchBids(
     profileId: number,
     days: number,
     campaignId?: string,
     adgroupId?: string,
-  ): Promise<any[]> {
+  ): Promise<BidResponse[]> {
     const endpoint = this.getBidsEndpoint(profileId, campaignId, adgroupId);
     const [succ, data, err] = await createApiRequest({
       method: 'GET',
@@ -617,20 +649,17 @@ class ApiClient {
       return [];
     }
 
-    return data as any[];
-  }
-
-  private mapBidChangesToEntries(entries: any[]): ChangeLogEntry[] {
-    return entries.map((entry) => ({
-      profileId: entry.profile_id as number,
-      campaignId: entry.campaign_id as string,
-      adgroup: entry.adgroup_id as string,
-      policyId: entry.policy_id as string,
-      oldPrice: entry.from_bid as number,
-      newPrice: entry.to_bid as number,
-      timestamp: new Date(entry.timestamp as string),
-      policyName: this.cachedPolicyMap?.[entry.policy_id]?.name ?? '???',
-    }));
+    return (data as any[])
+      .map(
+        (entry): BidResponse => ({
+          adgroupId: entry.adgroup_id as string,
+          oldPrice: entry.from_bid as number,
+          newPrice: entry.to_bid as number,
+          changeDate: new Date(entry.change_date as string),
+          isLive: entry.is_live as boolean,
+        }),
+      )
+      .sort((a, b) => a.changeDate.getTime() - b.changeDate.getTime());
   }
 
   private async getBidChangeLogs(
@@ -638,19 +667,11 @@ class ApiClient {
     days: number,
     campaignId?: string,
     adgroupId?: string,
-  ): Promise<ChangeLogEntry[]> {
-    const rawEntries = await this.fetchBidChanges(profileId, days, campaignId, adgroupId);
-    if (rawEntries.length === 0) {
-      return [];
-    }
-
-    // Ensure policy map is available for policy names in mapped entries
-    await this.getPolicies();
-
-    return this.mapBidChangesToEntries(rawEntries);
+  ): Promise<BidResponse[]> {
+    return this.fetchBids(profileId, days, campaignId, adgroupId);
   }
 
-  async getProfileChangeLogs(profileId: number, days: number): Promise<ChangeLogEntry[]> {
+  async getProfileChangeLogs(profileId: number, days: number): Promise<BidResponse[]> {
     return this.getBidChangeLogs(profileId, days);
   }
 
@@ -658,7 +679,7 @@ class ApiClient {
     profileId: number,
     campaignId: string,
     days: number,
-  ): Promise<ChangeLogEntry[]> {
+  ): Promise<BidResponse[]> {
     return this.getBidChangeLogs(profileId, days, campaignId);
   }
 
@@ -667,8 +688,41 @@ class ApiClient {
     campaignId: string,
     adgroupId: string,
     days: number,
-  ): Promise<ChangeLogEntry[]> {
+  ): Promise<BidResponse[]> {
     return this.getBidChangeLogs(profileId, days, campaignId, adgroupId);
+  }
+
+  async getUserLogs(profileId: number, pageNum: number): Promise<UserLogsPageResponse> {
+    const [succ, data, err] = await createApiRequest({
+      method: 'GET',
+      endpoint: `/user/logs/${profileId}`,
+      ...(await getAuthKeyParam()),
+      args: {
+        pageNum: pageNum.toString(),
+      },
+    });
+
+    if (err || !succ || !data) {
+      if (err) {
+        console.error('[apiClient] Failed to fetch user logs', err);
+      }
+      return {
+        logs: [],
+        totalPages: 0,
+      };
+    }
+
+    const parsedLogs = ((data.logs as any[]) ?? []).map(
+      (entry): UserLogResponse => ({
+        log: entry.log as string,
+        timestamp: new Date(entry.timestamp as string),
+      }),
+    );
+
+    return {
+      logs: parsedLogs,
+      totalPages: data.total_pages as number,
+    };
   }
 
   async getRedirectUrl(region: string): Promise<string | null> {
