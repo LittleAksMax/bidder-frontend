@@ -17,10 +17,12 @@ interface ChangeLogModalProps {
   adgroupNamesById?: Record<string, string> | null;
 }
 
-const getColor = (oldPrice: number, newPrice: number) => {
-  if (newPrice > oldPrice) return 'text-success';
-  if (newPrice < oldPrice) return 'text-danger';
-  return '';
+const getNewBidClassName = (oldPrice: number, newPrice: number, threshold: number): string => {
+  const difference = newPrice - oldPrice;
+
+  if (difference >= threshold) return 'change-log-bid-value change-log-bid-value-up';
+  if (difference <= -threshold) return 'change-log-bid-value change-log-bid-value-down';
+  return 'change-log-bid-value change-log-bid-value-neutral';
 };
 
 const getPrefix = (oldPrice: number, newPrice: number) => {
@@ -28,6 +30,8 @@ const getPrefix = (oldPrice: number, newPrice: number) => {
   if (newPrice < oldPrice) return '-';
   return '';
 };
+
+const formatBidValue = (value: number): string => value.toFixed(2);
 
 const getTitle = (scope: ChangeLogScope): string => {
   if (scope === 'seller') return 'Seller Change Log';
@@ -41,7 +45,7 @@ const getAdgroupLabel = (
   adgroupNamesById?: Record<string, string> | null,
 ): string => {
   const adgroupName = adgroupNamesById?.[adgroupId];
-  return adgroupName ? `${adgroupName} (${adgroupId})` : adgroupId;
+  return adgroupName ?? 'Unknown Ad Group';
 };
 
 const ChangeLogModal: FC<ChangeLogModalProps> = ({
@@ -57,6 +61,7 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({
   const [logs, setLogs] = useState<BidResponse[]>([]);
   const [page, setPage] = useState(1);
   const [days, setDays] = useState(30);
+  const [bidColourThreshold, setBidColourThreshold] = useState(0.01);
   const pageSize = 25;
 
   useEffect(() => {
@@ -157,13 +162,15 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({
                 <tr key={`${log.changeDate.toISOString()}-${log.adgroupId}`}>
                   <td>{getAdgroupLabel(log.adgroupId, adgroupNamesById)}</td>
                   <td>
-                    <code>{log.oldPrice}</code>
+                    <span className="change-log-bid-value">{formatBidValue(log.oldPrice)}</span>
                   </td>
-                  <td className={getColor(log.oldPrice, log.newPrice)}>
-                    <code>
+                  <td>
+                    <span
+                      className={getNewBidClassName(log.oldPrice, log.newPrice, bidColourThreshold)}
+                    >
                       {getPrefix(log.oldPrice, log.newPrice)}
-                      {log.newPrice}
-                    </code>
+                      {formatBidValue(log.newPrice)}
+                    </span>
                   </td>
                   <td>{new Date(log.changeDate).toLocaleString()}</td>
                   <td>{log.isLive ? 'Yes' : 'No'}</td>
@@ -201,6 +208,22 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({
               Next
             </Button>
           </div>
+        </div>
+        <div className="change-log-threshold-slider">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <Form.Label className="mb-0">Bid Colour Threshold</Form.Label>
+            <span className="change-log-threshold-value">{bidColourThreshold.toFixed(2)}</span>
+          </div>
+          <Form.Range
+            min={0.01}
+            max={0.5}
+            step={0.01}
+            value={bidColourThreshold}
+            onChange={(event) => {
+              const nextThreshold = Number.parseFloat(event.target.value);
+              setBidColourThreshold(Number.isFinite(nextThreshold) ? nextThreshold : 0);
+            }}
+          />
         </div>
       </Modal.Body>
     </Modal>

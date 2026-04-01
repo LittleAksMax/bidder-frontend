@@ -56,7 +56,6 @@ const editorReducer = (state: EditorState, action: EditorAction): EditorState =>
     case 'set_root':
       return { ...state, root: action.root }; // Handle set_root action
     default:
-      console.warn('Unknown action type:', action.type); // Warn for unknown actions
       return state;
   }
 };

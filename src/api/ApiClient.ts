@@ -11,6 +11,14 @@ import {
   AttachedPolicyDTO,
   ScheduledJob,
 } from './types';
+import {
+  ConvertScriptToTreeRequest,
+  ConvertTreeToScriptRequest,
+  Metric,
+  MetricType,
+  Node as ConvertNode,
+  Operator,
+} from './convert.types';
 import { createApiRequest } from './client';
 import { authClient } from './AuthClient';
 import { AttachPolicyRequest, DetachPolicyRequest } from './requests';
@@ -29,6 +37,150 @@ type PolicyAssignmentInput = {
   adgroupId: string;
   policyId: string;
   isLive: boolean;
+};
+
+type ConvertResponse<T> = {
+  result: T | null;
+  errorMessage: string | null;
+};
+
+const VALID_CONVERT_OPERATORS = new Set<Operator>(['+', '-', '=']);
+
+const parseConvertOperator = (value: unknown): Operator | null => {
+  if (typeof value === 'string') {
+    return VALID_CONVERT_OPERATORS.has(value as Operator) ? (value as Operator) : null;
+  }
+
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    const operator = String.fromCharCode(value) as Operator;
+    return VALID_CONVERT_OPERATORS.has(operator) ? operator : null;
+  }
+
+  return null;
+};
+
+const normaliseConvertNodeOperators = (node: unknown): ConvertNode | null => {
+  if (!node || typeof node !== 'object' || Array.isArray(node)) {
+    return null;
+  }
+
+  const candidate = node as Record<string, unknown>;
+  const nextNode: ConvertNode = {};
+
+  if (candidate.terminal && typeof candidate.terminal === 'object' && !Array.isArray(candidate.terminal)) {
+    const terminal = candidate.terminal as Record<string, unknown>;
+    const operator = parseConvertOperator(terminal.operator);
+
+    if (!operator || typeof terminal.amount !== 'number' || typeof terminal.percentage !== 'boolean') {
+      return null;
+    }
+
+    nextNode.terminal = {
+      operator,
+      amount: terminal.amount,
+      percentage: terminal.percentage,
+    };
+  }
+
+  if (
+    candidate.condition &&
+    typeof candidate.condition === 'object' &&
+    !Array.isArray(candidate.condition)
+  ) {
+    const condition = candidate.condition as Record<string, unknown>;
+
+    if (
+      typeof condition.metric !== 'string' ||
+      typeof condition.type !== 'string' ||
+      !Array.isArray(condition.branches)
+    ) {
+      return null;
+    }
+
+    const normalisedBranches = condition.branches.map((branch) => {
+      if (!branch || typeof branch !== 'object' || Array.isArray(branch)) {
+        return null;
+      }
+
+      const branchRecord = branch as Record<string, unknown>;
+      const normalisedNode = normaliseConvertNodeOperators(branchRecord.node);
+
+      if (!normalisedNode) {
+        return null;
+      }
+
+      return {
+        lower:
+          typeof branchRecord.lower === 'number' || branchRecord.lower === null
+            ? (branchRecord.lower as number | null)
+            : null,
+        upper:
+          typeof branchRecord.upper === 'number' || branchRecord.upper === null
+            ? (branchRecord.upper as number | null)
+            : null,
+        node: normalisedNode,
+      };
+    });
+
+    if (normalisedBranches.some((branch) => branch === null)) {
+      return null;
+    }
+
+    const resolvedBranches = normalisedBranches.filter(
+      (branch): branch is NonNullable<(typeof normalisedBranches)[number]> => branch !== null,
+    );
+
+    const defaultNode =
+      condition.default === null || condition.default === undefined
+        ? null
+        : normaliseConvertNodeOperators(condition.default);
+
+    if (condition.default !== null && condition.default !== undefined && !defaultNode) {
+      return null;
+    }
+
+    nextNode.condition = {
+      metric: condition.metric as Metric,
+      type: condition.type as MetricType,
+      branches: resolvedBranches,
+      default: defaultNode,
+    };
+  }
+
+  return nextNode;
+};
+
+const serialiseConvertNodeOperators = (node: ConvertNode): Record<string, unknown> => {
+  const nextNode: Record<string, unknown> = {};
+
+  if (node.terminal) {
+    const operator = parseConvertOperator(node.terminal.operator);
+
+    if (!operator) {
+      throw new Error('Invalid operator provided for conversion.');
+    }
+
+    nextNode.terminal = {
+      operator: operator.charCodeAt(0),
+      amount: node.terminal.amount,
+      percentage: node.terminal.percentage,
+    };
+  }
+
+  if (node.condition) {
+    nextNode.condition = {
+      metric: node.condition.metric,
+      type: node.condition.type,
+      branches: node.condition.branches.map((branch) => ({
+        lower: branch.lower ?? null,
+        upper: branch.upper ?? null,
+        node: serialiseConvertNodeOperators(branch.node),
+      })),
+      default: node.condition.default ? serialiseConvertNodeOperators(node.condition.default) : null,
+    };
+  }
+
+  return nextNode;
 };
 
 class ApiClient {
@@ -396,6 +548,78 @@ class ApiClient {
     return Object.values(this.cachedPolicyMap);
   }
 
+  async convertScriptToTree(script: string): Promise<ConvertResponse<ConvertNode>> {
+    const body: ConvertScriptToTreeRequest = { script };
+    const [succ, data, err] = await createApiRequest({
+      method: 'POST',
+      endpoint: '/convert/script-to-tree',
+      ...(await getAuthKeyParam()),
+      body,
+    });
+
+    if (err || !succ || data === null || typeof data !== 'object' || !('program' in data)) {
+      if (err) {
+        console.error('[apiClient] Failed to convert script to tree', err);
+      }
+      return {
+        result: null,
+        errorMessage: err?.message ?? 'Unable to convert the current script to JSON.',
+      };
+    }
+
+    const normalisedProgram = normaliseConvertNodeOperators(data.program);
+
+    if (!normalisedProgram) {
+      return {
+        result: null,
+        errorMessage: 'Received an invalid operator in the converted tree.',
+      };
+    }
+
+    return {
+      result: normalisedProgram,
+      errorMessage: null,
+    };
+  }
+
+  async convertTreeToScript(program: ConvertNode): Promise<ConvertResponse<string>> {
+    let body: ConvertTreeToScriptRequest;
+
+    try {
+      body = {
+        program: serialiseConvertNodeOperators(program),
+      } as unknown as ConvertTreeToScriptRequest;
+    } catch (error) {
+      return {
+        result: null,
+        errorMessage:
+          error instanceof Error ? error.message : 'Invalid operator provided for conversion.',
+      };
+    }
+
+    const [succ, data, err] = await createApiRequest({
+      method: 'POST',
+      endpoint: '/convert/tree-to-script',
+      ...(await getAuthKeyParam()),
+      body,
+    });
+
+    if (err || !succ || data === null || typeof data.script !== 'string') {
+      if (err) {
+        console.error('[apiClient] Failed to convert tree to script', err);
+      }
+      return {
+        result: null,
+        errorMessage: err?.message ?? 'Unable to convert the current JSON to script.',
+      };
+    }
+
+    return {
+      result: data.script,
+      errorMessage: null,
+    };
+  }
+
   async createPolicy(name: string, marketplace: string, script: string): Promise<Policy | null> {
     const [succ, data, err] = await createApiRequest({
       method: 'POST',
@@ -649,17 +873,15 @@ class ApiClient {
       return [];
     }
 
-    return (data as any[])
-      .map(
-        (entry): BidResponse => ({
-          adgroupId: entry.adgroup_id as string,
-          oldPrice: entry.from_bid as number,
-          newPrice: entry.to_bid as number,
-          changeDate: new Date(entry.change_date as string),
-          isLive: entry.is_live as boolean,
-        }),
-      )
-      .sort((a, b) => a.changeDate.getTime() - b.changeDate.getTime());
+    return (data as any[]).map(
+      (entry): BidResponse => ({
+        adgroupId: entry.adgroup_id as string,
+        oldPrice: entry.from_bid as number,
+        newPrice: entry.to_bid as number,
+        changeDate: new Date(entry.change_date as string),
+        isLive: entry.is_live as boolean,
+      }),
+    );
   }
 
   private async getBidChangeLogs(

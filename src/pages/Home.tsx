@@ -19,6 +19,7 @@ const Home: FC = () => {
   const [selectedSeller, setSelectedSeller] = useState<ProfileGroup | null>(null);
   const [marketplaces, setMarketplaces] = useState<string[]>([]);
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
+  const [adgroupNamesById, setAdgroupNamesById] = useState<Record<string, string>>({});
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [sellersLoaded, setSellersLoaded] = useState(false);
   const [hasInitialisedSelection, setHasInitialisedSelection] = useState(false);
@@ -84,6 +85,10 @@ const Home: FC = () => {
     selectedSeller !== null && selectedSeller.profiles.length > 0 && selectedProfile === null;
   const changeLogScope: ChangeLogScope = selectedProfile ? 'profile' : 'seller';
 
+  useEffect(() => {
+    setAdgroupNamesById({});
+  }, [selectedSeller?.id, selectedProfile?.profileId]);
+
   return (
     <Page showSettings>
       <div className="w-100 d-flex justify-content-between align-items-center mb-3">
@@ -142,6 +147,7 @@ const Home: FC = () => {
         sellerId={selectedSeller?.id ?? null}
         profile={selectedProfile}
         selectionPending={selectionPending}
+        onAdgroupNamesByIdChange={setAdgroupNamesById}
       />
       <ChangeLogModal
         show={showChangeLog}
@@ -149,6 +155,7 @@ const Home: FC = () => {
         scope={changeLogScope}
         sellerId={selectedSeller?.id ?? null}
         profileId={selectedProfile?.profileId ?? null}
+        adgroupNamesById={adgroupNamesById}
       />
     </Page>
   );

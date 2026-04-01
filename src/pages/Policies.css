@@ -44,6 +44,14 @@
   overflow-y: auto;
 }
 
+.policies-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+}
+
 .policies-footer {
   height: 5%;
   min-height: 50px;

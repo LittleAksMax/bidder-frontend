@@ -13,7 +13,7 @@ const CodeEditorWithLineNumbers: FC<CodeEditorWithLineNumbersProps> = ({
   ariaLabel,
   onChange,
 }) => {
-  const gutterRef = useRef<{ scrollTop: number } | null>(null);
+  const gutterRef = useRef<HTMLDivElement | null>(null);
   const lineCount = useMemo<number>(() => Math.max(1, value.split('\n').length), [value]);
 
   const handleScroll = (nextScrollTop: number): void => {

@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react';
-import { Card, Button } from 'react-bootstrap';
+import { Card, Button, Spinner } from 'react-bootstrap';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ const Policies: FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [undeletablePolicyIds, setUndeletablePolicyIds] = useState<Set<string>>(new Set());
   const [hasLoadedDeleteConstraints, setHasLoadedDeleteConstraints] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editPolicyId, setEditPolicyId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -23,39 +24,45 @@ const Policies: FC = () => {
     let isMounted = true;
 
     const loadPoliciesPageData = async (): Promise<void> => {
-      const attachedPolicyIdsPromise = (async (): Promise<Set<string>> => {
-        const sellerProfiles = await apiClient.getSellerProfiles();
-        const profileIds = sellerProfiles.flatMap((seller) =>
-          seller.profiles.map((profile) => profile.profileId),
-        );
-        const attachedPoliciesByProfile = await Promise.all(
-          profileIds.map((profileId) => apiClient.getAttachedPolicies(profileId)),
-        );
+      try {
+        const attachedPolicyIdsPromise = (async (): Promise<Set<string>> => {
+          const sellerProfiles = await apiClient.getSellerProfiles();
+          const profileIds = sellerProfiles.flatMap((seller) =>
+            seller.profiles.map((profile) => profile.profileId),
+          );
+          const attachedPoliciesByProfile = await Promise.all(
+            profileIds.map((profileId) => apiClient.getAttachedPolicies(profileId)),
+          );
 
-        const nextUndeletablePolicyIds = new Set<string>();
-        attachedPoliciesByProfile.forEach((attachedPolicies) => {
-          attachedPolicies.forEach((attachedPolicy) => {
-            if (attachedPolicy.adgroupId.length > 0 && attachedPolicy.policyId.length > 0) {
-              nextUndeletablePolicyIds.add(attachedPolicy.policyId);
-            }
+          const nextUndeletablePolicyIds = new Set<string>();
+          attachedPoliciesByProfile.forEach((attachedPolicies) => {
+            attachedPolicies.forEach((attachedPolicy) => {
+              if (attachedPolicy.adgroupId.length > 0 && attachedPolicy.policyId.length > 0) {
+                nextUndeletablePolicyIds.add(attachedPolicy.policyId);
+              }
+            });
           });
-        });
 
-        return nextUndeletablePolicyIds;
-      })();
+          return nextUndeletablePolicyIds;
+        })();
 
-      const [loadedPolicies, loadedUndeletablePolicyIds] = await Promise.all([
-        apiClient.getPolicies(),
-        attachedPolicyIdsPromise,
-      ]);
+        const [loadedPolicies, loadedUndeletablePolicyIds] = await Promise.all([
+          apiClient.getPolicies(),
+          attachedPolicyIdsPromise,
+        ]);
 
-      if (!isMounted) {
-        return;
+        if (!isMounted) {
+          return;
+        }
+
+        setPolicies(loadedPolicies);
+        setUndeletablePolicyIds(loadedUndeletablePolicyIds);
+        setHasLoadedDeleteConstraints(true);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-
-      setPolicies(loadedPolicies);
-      setUndeletablePolicyIds(loadedUndeletablePolicyIds);
-      setHasLoadedDeleteConstraints(true);
     };
 
     void loadPoliciesPageData();
@@ -79,9 +86,6 @@ const Policies: FC = () => {
   };
 
   const handleUpdatePolicy = async (id: string, name: string, script: string): Promise<boolean> => {
-    // Close modal
-    setEditPolicyId(null);
-
     // Optimistic update: update policy immediately in the list
     setPolicies((prev) =>
       prev.map((policy) => (policy.id === id ? { ...policy, name, script } : policy)),
@@ -138,13 +142,19 @@ const Policies: FC = () => {
         <Card.Body className="p-0 grow d-flex flex-column position-relative policies-body">
           <div className="policies-body-inner">
             <div className="policies-list-scroll">
-              <PoliciesList
-                policies={policies}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                undeletablePolicyIds={undeletablePolicyIds}
-                hasLoadedDeleteConstraints={hasLoadedDeleteConstraints}
-              />
+              {isLoading ? (
+                <div className="policies-loading-state">
+                  <Spinner animation="border" />
+                </div>
+              ) : (
+                <PoliciesList
+                  policies={policies}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  undeletablePolicyIds={undeletablePolicyIds}
+                  hasLoadedDeleteConstraints={hasLoadedDeleteConstraints}
+                />
+              )}
             </div>
           </div>
 

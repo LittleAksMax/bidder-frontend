@@ -23,6 +23,48 @@ const processArgs = (args: Record<string, string | string[]>): string => {
   return `?${query}`;
 };
 
+const extractApiErrorMessage = (payload: Record<string, any> | null): string | null => {
+  const messageCandidates = [
+    payload?.message,
+    payload?.error,
+    payload?.detail,
+    payload?.data?.message,
+    payload?.data?.error,
+    payload?.data?.detail,
+  ];
+
+  const directMessage = messageCandidates.find(
+    (candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0,
+  );
+
+  if (directMessage) {
+    return directMessage;
+  }
+
+  if (Array.isArray(payload?.errors)) {
+    const joinedMessages = payload.errors
+      .map((entry) => {
+        if (typeof entry === 'string') {
+          return entry.trim();
+        }
+
+        if (typeof entry?.message === 'string') {
+          return entry.message.trim();
+        }
+
+        return '';
+      })
+      .filter(Boolean)
+      .join(', ');
+
+    if (joinedMessages.length > 0) {
+      return joinedMessages;
+    }
+  }
+
+  return null;
+};
+
 // Utility function to handle API requests
 export const createApiRequest = async ({
   endpoint,
@@ -44,24 +86,26 @@ export const createApiRequest = async ({
       body: body ? JSON.stringify(body) : null, // Ensure body is null when undefined
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Attempt to parse JSON, return null if the body is empty
-    let data = null;
-    let success = false;
-    try {
-      const responseJSON = await response.json();
-      data = responseJSON.data;
-      success = responseJSON.success;
-    } catch (jsonError) {
-      if (response.headers.get('Content-Type')?.includes('application/json')) {
+    let responseJSON: Record<string, any> | null = null;
+    if (response.headers.get('Content-Type')?.includes('application/json')) {
+      try {
+        responseJSON = (await response.json()) as Record<string, any>;
+      } catch (jsonError) {
         console.error('Failed to parse JSON response:', jsonError);
       }
     }
 
-    return [success, data, null];
+    const apiErrorMessage = extractApiErrorMessage(responseJSON);
+
+    if (!response.ok) {
+      throw new Error(apiErrorMessage ?? `HTTP error! status: ${response.status}`);
+    }
+
+    return [
+      Boolean(responseJSON?.success),
+      responseJSON?.data ?? null,
+      responseJSON?.success ? null : new Error(apiErrorMessage ?? 'Request failed'),
+    ];
   } catch (error) {
     console.error('API Request Error:', error);
     return [false, null, error as Error]; // Explicitly cast error to Error type

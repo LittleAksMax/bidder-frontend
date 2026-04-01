@@ -1,3 +1,42 @@
 .change-log-days-input {
   width: 80px;
 }
+
+.change-log-bid-value {
+  color: #212529;
+  font-family:
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace;
+}
+
+.change-log-bid-value-up {
+  color: #198754;
+}
+
+.change-log-bid-value-down {
+  color: #dc3545;
+}
+
+.change-log-bid-value-neutral {
+  color: #212529;
+}
+
+.change-log-threshold-slider {
+  margin-top: 1rem;
+}
+
+.change-log-threshold-value {
+  font-family:
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace;
+}

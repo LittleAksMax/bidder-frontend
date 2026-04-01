@@ -21,6 +21,20 @@
   margin: 1rem;
 }
 
+.policy-editor-modal-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.policy-nested-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .policy-modal-submit-btn {
   color: #fff;
   padding: 0.5rem 1rem;

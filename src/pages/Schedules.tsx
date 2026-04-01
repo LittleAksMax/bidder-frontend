@@ -321,6 +321,10 @@ const Schedules: FC = () => {
                               onClick={() =>
                                 void handlePrioritiseSchedule(schedule.profile.profileId)
                               }
+                              disabled={
+                                schedule.dueAt.getTime() <= Date.now() ||
+                                schedule.state === 'PROCESSING'
+                              }
                             />
                             <DeleteButton
                               className="schedules-delete-btn"

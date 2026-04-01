@@ -1,17 +1,12 @@
-import { Dispatch, FC, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
+import { apiClient } from '../../api/ApiClient';
+import { Node as ConvertNode } from '../../api/convert.types';
 import Modal from '../Modal';
 import { Policy, RULE_TYPES, RuleType } from '../../api/types';
+import DecisionGraphPolicyRules from '../Rules/DecisionGraphPolicyRules';
 import NestedPolicyRules from '../Rules/NestedPolicyRules';
-import { EditorProvider } from '../Rules/EditorContext';
 import ScriptPolicyRules from '../Rules/ScriptPolicyRules';
-import TreePolicyRules from '../Rules/TreePolicyRules';
-import { areAllSlotsFilled } from '../Rules/treeUtils';
-import {
-  policyRuleTranspiler,
-  ScriptPolicyProgram,
-  TreePolicyProgram,
-} from '../../transpilation/policyRuleTranspiler';
-import { RuleNode } from '../../transpilation/ruleTypes';
+import { ScriptPolicyProgram } from '../../transpilation/policyRuleTranspiler';
 import './PolicyInputs.css';
 import './CreatePolicyModal.css';
 import HelpButton from './HelpButton';
@@ -42,99 +37,188 @@ const EditPolicyModalBody: FC<EditPolicyModalBodyProps & EditPolicyModalFocusPro
   onEditorBlurCapture,
 }) => {
   const initialScriptProgram = createInitialScriptProgram(policy);
-  const initialRule = policyRuleTranspiler.toNested('script', initialScriptProgram);
 
   const [policyName, setPolicyName] = useState<string>(policy?.name ?? '');
   const [ruleType, setRuleType] = useState<RuleType>('script');
   const [marketplace] = useState<string>(policy?.marketplace ?? 'EU');
-  const [allSlotsFilled, setAllSlotsFilled] = useState<boolean>(() => areAllSlotsFilled(initialRule));
-  const [rules, setRules] = useState<RuleNode | null>(initialRule);
-  const rulesRef = useRef<RuleNode | null>(initialRule);
   const [scriptProgram, setScriptProgram] = useState<ScriptPolicyProgram>(initialScriptProgram);
-  const [treeProgram, setTreeProgram] = useState<TreePolicyProgram>(() =>
-    policyRuleTranspiler.fromNested('tree', initialRule),
-  );
+  const [treeProgram, setTreeProgram] = useState<ConvertNode | null>(null);
+  const [areNestedSlotsFilled, setAreNestedSlotsFilled] = useState<boolean>(false);
+  const [areTreeSlotsFilled, setAreTreeSlotsFilled] = useState<boolean>(false);
+  const [isConverting, setIsConverting] = useState<boolean>(false);
+  const [conversionError, setConversionError] = useState<string | null>(null);
 
   const isUpdateEnabled =
-    allSlotsFilled && Boolean(policy) && Boolean(policyName.trim()) && Boolean(scriptProgram.source.trim());
-
-  const syncDerivedFormats = useCallback((rule: RuleNode | null): void => {
-    setScriptProgram(policyRuleTranspiler.fromNested('script', rule));
-    setTreeProgram(policyRuleTranspiler.fromNested('tree', rule));
-  }, []);
-
-  useEffect(() => {
-    rulesRef.current = rules;
-  }, [rules]);
-
-  const handleNestedRuleChange = useCallback<Dispatch<SetStateAction<RuleNode | null>>>(
-    (nextRule) => {
-      const resolvedRule = typeof nextRule === 'function' ? nextRule(rulesRef.current) : nextRule;
-      rulesRef.current = resolvedRule;
-      setRules(resolvedRule);
-      setAllSlotsFilled(areAllSlotsFilled(resolvedRule));
-      syncDerivedFormats(resolvedRule);
-    },
-    [syncDerivedFormats],
-  );
+    Boolean(policy) &&
+    Boolean(policyName.trim()) &&
+    !isConverting &&
+    (ruleType === 'script'
+      ? Boolean(scriptProgram.source.trim())
+      : ruleType === 'nested'
+        ? areNestedSlotsFilled
+        : areTreeSlotsFilled);
 
   const handleScriptChange = (nextProgram: ScriptPolicyProgram): void => {
+    setConversionError(null);
     setScriptProgram(nextProgram);
-    const nextRule = policyRuleTranspiler.toNested('script', nextProgram);
-    setRules(nextRule);
-    setAllSlotsFilled(areAllSlotsFilled(nextRule));
-    setTreeProgram(policyRuleTranspiler.fromNested('tree', nextRule));
   };
 
-  const handleTreeChange = (nextProgram: TreePolicyProgram | null): void => {
-    if (!nextProgram) {
-      setRules(null);
-      setAllSlotsFilled(false);
+  const handleNestedChange = (nextProgram: ConvertNode | null): void => {
+    setConversionError(null);
+    setTreeProgram(nextProgram);
+  };
+
+  const handleTreeChange = (nextProgram: ConvertNode | null): void => {
+    setConversionError(null);
+    setTreeProgram(nextProgram);
+  };
+
+  const handleRuleTypeChange = async (nextRuleType: RuleType): Promise<void> => {
+    if (nextRuleType === ruleType) {
       return;
     }
 
-    setTreeProgram(nextProgram);
-    const nextRule = policyRuleTranspiler.toNested('tree', nextProgram);
-    setRules(nextRule);
-    setAllSlotsFilled(areAllSlotsFilled(nextRule));
-    setScriptProgram(policyRuleTranspiler.fromNested('script', nextRule));
-  };
+    setConversionError(null);
 
-  const handleRuleTypeChange = (nextRuleType: RuleType): void => {
-    let nextRule = rules;
-    if (ruleType === 'script') {
-      nextRule = policyRuleTranspiler.toNested('script', scriptProgram);
-    } else if (ruleType === 'tree') {
-      nextRule = policyRuleTranspiler.toNested('tree', treeProgram);
+    if (ruleType === 'script' && nextRuleType !== 'script') {
+      const currentScript = scriptProgram.source.trim();
+
+      if (!currentScript) {
+        setTreeProgram(null);
+        setRuleType(nextRuleType);
+        return;
+      }
+
+      setIsConverting(true);
+
+      try {
+        const { result: convertedTree, errorMessage } = await apiClient.convertScriptToTree(
+          scriptProgram.source,
+        );
+
+        if (!convertedTree) {
+          setConversionError(errorMessage ?? 'Unable to convert the current script to JSON.');
+          return;
+        }
+
+        setTreeProgram(convertedTree);
+        setRuleType(nextRuleType);
+      } finally {
+        setIsConverting(false);
+      }
+
+      return;
+    }
+
+    if (ruleType !== 'script' && nextRuleType === 'script') {
+      if (!treeProgram) {
+        setScriptProgram({ source: '' });
+        setRuleType(nextRuleType);
+        return;
+      }
+
+      setIsConverting(true);
+
+      try {
+        const { result: convertedScript, errorMessage } =
+          await apiClient.convertTreeToScript(treeProgram);
+
+        if (convertedScript === null) {
+          setConversionError(errorMessage ?? 'Unable to convert the current rule to script.');
+          return;
+        }
+
+        setScriptProgram({ source: convertedScript });
+        setRuleType(nextRuleType);
+      } finally {
+        setIsConverting(false);
+      }
+
+      return;
     }
 
     setRuleType(nextRuleType);
-    setRules(nextRule);
-    setAllSlotsFilled(areAllSlotsFilled(nextRule));
-
-    if (nextRuleType === 'script') {
-      setScriptProgram(policyRuleTranspiler.fromNested('script', nextRule));
-    } else if (nextRuleType === 'tree') {
-      setTreeProgram(policyRuleTranspiler.fromNested('tree', nextRule));
-    }
   };
 
-  let ruleComponent = null;
-  if (ruleType === 'nested') {
-    ruleComponent = (
-      <EditorProvider>
+  const currentEditorError = conversionError;
+
+  const handleUpdatePolicy = async (): Promise<void> => {
+    if (!policy || !isUpdateEnabled) {
+      return;
+    }
+
+    let nextScript = scriptProgram.source;
+
+    if (ruleType !== 'script') {
+      if (!treeProgram) {
+        setConversionError('Complete the rule before updating the policy.');
+        return;
+      }
+
+      setConversionError(null);
+      setIsConverting(true);
+
+      try {
+        const { result: convertedScript, errorMessage } =
+          await apiClient.convertTreeToScript(treeProgram);
+
+        if (convertedScript === null) {
+          setConversionError(errorMessage ?? 'Unable to convert the current rule to script.');
+          return;
+        }
+
+        nextScript = convertedScript;
+        setScriptProgram({ source: convertedScript });
+      } finally {
+        setIsConverting(false);
+      }
+    }
+
+    await handleUpdate(policy.id, policyName, nextScript);
+  };
+
+  const ruleLabel =
+    ruleType === 'script'
+      ? 'Policy Script'
+      : ruleType === 'nested'
+        ? 'Nested Policy Rules'
+        : 'Decision Tree';
+
+  const ruleAriaLabel =
+    ruleType === 'script'
+      ? 'Policy script editor'
+      : ruleType === 'nested'
+        ? 'Nested policy rules editor'
+        : 'Decision tree editor';
+
+  const ruleComponent =
+    ruleType === 'nested' ? (
+      <div className="policy-nested-editor">
         <NestedPolicyRules
-          rule={rules}
-          onSlotsFilledChange={setAllSlotsFilled}
-          onRuleChange={handleNestedRuleChange}
+          rule={treeProgram}
+          onRuleChange={handleNestedChange}
+          onSlotsFilledChange={setAreNestedSlotsFilled}
         />
-      </EditorProvider>
+        {currentEditorError ? <p className="transpiled-editor-error">{currentEditorError}</p> : null}
+      </div>
+    ) : ruleType === 'tree' ? (
+      <div className="policy-nested-editor">
+        <DecisionGraphPolicyRules
+          rule={treeProgram}
+          onRuleChange={handleTreeChange}
+          onSlotsFilledChange={setAreTreeSlotsFilled}
+        />
+        {currentEditorError ? <p className="transpiled-editor-error">{currentEditorError}</p> : null}
+      </div>
+    ) : (
+      <ScriptPolicyRules
+        data={scriptProgram}
+        onChange={handleScriptChange}
+        label={ruleLabel}
+        ariaLabel={ruleAriaLabel}
+        errorMessage={currentEditorError}
+      />
     );
-  } else if (ruleType === 'script') {
-    ruleComponent = <ScriptPolicyRules data={scriptProgram} onChange={handleScriptChange} />;
-  } else if (ruleType === 'tree') {
-    ruleComponent = <TreePolicyRules data={treeProgram} onChange={handleTreeChange} />;
-  }
 
   return (
     <>
@@ -144,6 +228,7 @@ const EditPolicyModalBody: FC<EditPolicyModalBodyProps & EditPolicyModalFocusPro
             value={ruleType}
             onChange={(event) => handleRuleTypeChange(event.target.value as RuleType)}
             className="dropdown"
+            disabled={isConverting}
           >
             {RULE_TYPES.map((rt) => (
               <option key={rt.value} value={rt.value}>
@@ -159,6 +244,7 @@ const EditPolicyModalBody: FC<EditPolicyModalBodyProps & EditPolicyModalFocusPro
             value={policyName}
             onChange={(event) => setPolicyName(event.target.value)}
             className="input-field"
+            disabled={isConverting}
           />
         </div>
         <HelpButton section={ruleType} />
@@ -167,7 +253,7 @@ const EditPolicyModalBody: FC<EditPolicyModalBodyProps & EditPolicyModalFocusPro
         </button>
       </div>
       <div
-        className="modal-body"
+        className="modal-body policy-editor-modal-body"
         onFocusCapture={onEditorFocusCapture}
         onBlurCapture={onEditorBlurCapture}
       >
@@ -177,11 +263,7 @@ const EditPolicyModalBody: FC<EditPolicyModalBodyProps & EditPolicyModalFocusPro
         <button
           className={`policy-modal-submit-btn ${isUpdateEnabled ? 'is-enabled' : 'is-disabled'}`}
           disabled={!isUpdateEnabled}
-          onClick={() => {
-            if (policy) {
-              handleUpdate(policy.id, policyName, scriptProgram.source);
-            }
-          }}
+          onClick={() => void handleUpdatePolicy()}
         >
           Update Policy
         </button>

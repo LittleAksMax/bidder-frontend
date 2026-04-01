@@ -19,6 +19,7 @@ interface CampaignsListProps {
   sellerId: string | null;
   profile: Profile | null;
   selectionPending: boolean;
+  onAdgroupNamesByIdChange?: (adgroupNamesById: Record<string, string>) => void;
 }
 
 type ChangeLogContext = {
@@ -43,7 +44,13 @@ type AssignPolicyContext =
 
 const defaultProfileFields = { profileId: null, countryCode: '' };
 
-const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, selectionPending }) => {
+const CampaignsList: FC<CampaignsListProps> = ({
+  region,
+  sellerId,
+  profile,
+  selectionPending,
+  onAdgroupNamesByIdChange,
+}) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [assignPolicyContext, setAssignPolicyContext] = useState<AssignPolicyContext | null>(null);
@@ -125,6 +132,20 @@ const CampaignsList: FC<CampaignsListProps> = ({ region, sellerId, profile, sele
       isCancelled = true;
     };
   }, [campaigns]);
+
+  useEffect(() => {
+    if (!onAdgroupNamesByIdChange) {
+      return;
+    }
+
+    const nextAdgroupNamesById = Object.fromEntries(
+      campaigns.flatMap((campaign) =>
+        campaign.adgroups.map((adgroup) => [adgroup.id, adgroup.name]),
+      ),
+    );
+
+    onAdgroupNamesByIdChange(nextAdgroupNamesById);
+  }, [campaigns, onAdgroupNamesByIdChange]);
 
   const filteredCampaigns = campaigns;
 

@@ -4,3 +4,7 @@
   margin: 0 auto;
   padding: 24px;
 }
+
+.nested-policy-rules .empty-slot-root {
+  width: 100%;
+}

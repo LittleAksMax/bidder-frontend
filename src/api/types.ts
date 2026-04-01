@@ -34,6 +34,12 @@ export type Campaign = {
   marketplace: string; // marketplace code (e.g., 'UK', 'US', etc.)
 };
 
+export type Product = {
+  id: string;
+  sku: string;
+  name: string;
+};
+
 export type ProfileGroup = {
   id: string;
   name: string;
@@ -105,6 +111,31 @@ export const VARIABLE_TYPES = [
 export type RuleType = (typeof RULE_TYPES)[number]['value'];
 
 export type VariableType = (typeof VARIABLE_TYPES)[number]['value'];
+
+export type TerminalRuleNodeOperationType = {
+  type: 'add' | 'mul';
+  amount: {
+    neg: boolean;
+    amount: number;
+    perc: boolean;
+  };
+};
+
+export type TerminalRuleNode = {
+  type: 'terminal';
+  op: TerminalRuleNodeOperationType;
+};
+
+export type ConditionRuleNode = {
+  type: 'condition';
+  variable: VariableType;
+  min: number;
+  max: number;
+  if: TerminalRuleNode | ConditionRuleNode | null;
+  else: TerminalRuleNode | ConditionRuleNode | null;
+};
+
+export type RuleNode = TerminalRuleNode | ConditionRuleNode;
 
 export type Policy = {
   id: string;

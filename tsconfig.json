@@ -23,7 +23,7 @@
 
     "isolatedModules": true,
     "noEmit": true,
-    "skipLibCheck": false,             // stricter, but can be noisy
+    "skipLibCheck": true,              // third-party .d.ts currently conflict with exactOptionalPropertyTypes
     "forceConsistentCasingInFileNames": true,
 
     "esModuleInterop": true,
