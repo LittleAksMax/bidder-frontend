@@ -2,7 +2,7 @@ import { FC } from 'react';
 import { Card } from 'react-bootstrap';
 import CampaignsList from './CampaignsList';
 import './CampaignsListContainer.css';
-import { Profile } from '../../api/types';
+import { Profile } from '../../api/profile.types';
 
 interface CampaignsListContainerProps {
   region: string | null;

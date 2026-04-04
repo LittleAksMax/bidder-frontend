@@ -1,13 +1,14 @@
 import { FC, ReactNode } from 'react';
-import { Container, Spinner } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 import SettingsMenu from './SettingsMenu';
 import AccountButton from './AccountButton';
+import Loading from './Loading';
 import './Page.css';
 
 interface PageProps {
   children: ReactNode;
   showSettings?: boolean;
-  loading?: boolean; // Added loading prop
+  loading?: boolean;
 }
 
 const Page: FC<PageProps> = ({ children, showSettings = false, loading = false }) => (
@@ -19,15 +20,7 @@ const Page: FC<PageProps> = ({ children, showSettings = false, loading = false }
       <SettingsMenu show={showSettings} />
       <AccountButton show={showSettings} />
     </div>
-    <div className="page-content-shell">
-      {loading ? (
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-      ) : (
-        children
-      )}
-    </div>
+    <div className="page-content-shell">{loading ? <Loading /> : children}</div>
   </Container>
 );
 

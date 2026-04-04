@@ -1,7 +1,10 @@
 import { FC, MouseEvent, useEffect, useState } from 'react';
-import { Form, ListGroup, Spinner } from 'react-bootstrap';
+import { Form, ListGroup } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { Campaign, Policy, Profile } from '../../api/types';
+import { Campaign } from '../../api/campaign.types';
+import { Policy } from '../../api/policy.types';
+import { Profile } from '../../api/profile.types';
+import Loading from '../../pages/Loading';
 import AdgroupsList from './AdgroupsList';
 import ExpandButton from './ExpandButton';
 import AssignPolicyModal from './AssignPolicyModal';
@@ -43,6 +46,21 @@ type AssignPolicyContext =
     };
 
 const defaultProfileFields = { profileId: null, countryCode: '' };
+
+const collectPolicyIds = (campaigns: Campaign[]): string[] =>
+  Array.from(
+    new Set(
+      campaigns.flatMap((campaign) => [
+        ...(campaign.policyId ? [campaign.policyId] : []),
+        ...campaign.adgroups.flatMap((adgroup) => (adgroup.policyId ? [adgroup.policyId] : [])),
+      ]),
+    ),
+  );
+
+const buildAdgroupNamesById = (campaigns: Campaign[]): Record<string, string> =>
+  Object.fromEntries(
+    campaigns.flatMap((campaign) => campaign.adgroups.map((adgroup) => [adgroup.id, adgroup.name])),
+  );
 
 const CampaignsList: FC<CampaignsListProps> = ({
   region,
@@ -100,29 +118,19 @@ const CampaignsList: FC<CampaignsListProps> = ({
     }
 
     const fetchPolicies = async () => {
-      const policyMap: Record<string, Policy> = {};
-      const policyIds = new Set<string>();
-
-      campaigns.forEach((campaign) => {
-        if (campaign.policyId) {
-          policyIds.add(campaign.policyId);
-        }
-        campaign.adgroups.forEach((adgroup) => {
-          if (adgroup.policyId) {
-            policyIds.add(adgroup.policyId);
-          }
-        });
-      });
-
-      for (const policyId of policyIds) {
-        const policy = await apiClient.getPolicyByID(policyId);
-        if (policy) {
-          policyMap[policyId] = policy;
-        }
-      }
+      const loadedPolicies = await Promise.all(
+        collectPolicyIds(campaigns).map(async (policyId) => ({
+          policyId,
+          policy: await apiClient.getPolicyByID(policyId),
+        })),
+      );
 
       if (!isCancelled) {
-        setPolicies(policyMap);
+        setPolicies(
+          Object.fromEntries(
+            loadedPolicies.flatMap(({ policyId, policy }) => (policy ? [[policyId, policy]] : [])),
+          ),
+        );
       }
     };
 
@@ -138,13 +146,7 @@ const CampaignsList: FC<CampaignsListProps> = ({
       return;
     }
 
-    const nextAdgroupNamesById = Object.fromEntries(
-      campaigns.flatMap((campaign) =>
-        campaign.adgroups.map((adgroup) => [adgroup.id, adgroup.name]),
-      ),
-    );
-
-    onAdgroupNamesByIdChange(nextAdgroupNamesById);
+    onAdgroupNamesByIdChange(buildAdgroupNamesById(campaigns));
   }, [campaigns, onAdgroupNamesByIdChange]);
 
   const filteredCampaigns = campaigns;
@@ -361,15 +363,16 @@ const CampaignsList: FC<CampaignsListProps> = ({
 
   const hasSellerAndProfile = sellerId !== null && profileId !== null;
 
-  return loading || selectionPending ? (
-    <div className="d-flex justify-content-center align-items-center assign-policy-loading">
-      <Spinner animation="border" />
-    </div>
-  ) : (
+  if (loading || selectionPending) {
+    return <Loading className="assign-policy-loading" />;
+  }
+
+  return (
     <>
       <ListGroup>
         {filteredCampaigns.length === 0 && <p>No enabled campaigns in this configuration.</p>}
         {filteredCampaigns.map((campaign) => {
+          const isExpanded = expanded.includes(campaign.id);
           const campaignHasAnyPolicy = campaign.adgroups.some(
             (adgroup) => adgroup.policyId !== null,
           );
@@ -387,11 +390,9 @@ const CampaignsList: FC<CampaignsListProps> = ({
                   nameSection={
                     <>
                       <ExpandButton
-                        expanded={expanded.includes(campaign.id)}
+                        expanded={isExpanded}
                         onToggle={() => handleToggle(campaign.id)}
-                        ariaLabel={
-                          expanded.includes(campaign.id) ? 'Collapse campaign' : 'Expand campaign'
-                        }
+                        ariaLabel={isExpanded ? 'Collapse campaign' : 'Expand campaign'}
                         className="me-1 campaign-row-action"
                       />
                       <span className="campaign-row-name-wrap">
@@ -444,12 +445,17 @@ const CampaignsList: FC<CampaignsListProps> = ({
                       <DeleteButton
                         onClick={() => handleRemoveCampaignPolicy(campaign.id)}
                         className="campaign-row-action"
+                        confirmation={{
+                          title: 'Remove campaign policy?',
+                          body: `This will detach the current policy from "${campaign.name}" and its ad groups.`,
+                          confirmLabel: 'Remove Policy',
+                        }}
                       />
                     </>
                   }
                 />
               </div>
-              {expanded.includes(campaign.id) && (
+              {isExpanded ? (
                 <div className="mt-2">
                   <AdgroupsList
                     adgroups={campaign.adgroups}
@@ -488,7 +494,7 @@ const CampaignsList: FC<CampaignsListProps> = ({
                     }
                   />
                 </div>
-              )}
+              ) : null}
             </CampaignsListItem>
           );
         })}

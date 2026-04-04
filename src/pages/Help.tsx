@@ -10,9 +10,6 @@ const Help: FC = () => {
 
         <h1 id="script">Policy Script</h1>
         <p>TODO: add instructions</p>
-
-        <h1 id="tree">Decision Tree</h1>
-        <p>TODO: add instructions</p>
       </div>
     </Page>
   );

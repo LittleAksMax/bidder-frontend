@@ -1,4 +1,4 @@
-import { RuleNode, ConditionRuleNode, TerminalRuleNode, VariableType } from '../../api/types';
+import { RuleNode, VariableType } from '../../api/nestedpolicy.types';
 
 export type Path = Array<'if' | 'else' | 'terminal'>;
 export type ReadonlyPath = ReadonlyArray<'if' | 'else' | 'terminal'>;

@@ -1,5 +1,4 @@
 FROM node:22-alpine AS builder
-EXPOSE 8080
 WORKDIR /app
 COPY package.json ./
 COPY yarn.lock ./

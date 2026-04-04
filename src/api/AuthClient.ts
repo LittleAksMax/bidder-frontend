@@ -5,7 +5,7 @@ import {
   RefreshResponse,
   RegisterRequest,
   RegisterResponse,
-} from './requests';
+} from './contracts';
 
 const accessTokenKey = 'ACCESS_TOKEN';
 const refreshTokenKey = 'REFRESH_TOKEN';
@@ -164,7 +164,7 @@ class AuthClient {
   async ensureAuthenticated(): Promise<boolean> {
     const accessToken = localStorage.getItem(accessTokenKey);
     const refreshToken = localStorage.getItem(refreshTokenKey);
-    
+
     if (!refreshToken) {
       this.clearCredentials();
       return false;

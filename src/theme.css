@@ -41,6 +41,8 @@ body {
   color: #fff !important;
 }
 
+/*  Global scrollbar styling */
+
 ::-webkit-scrollbar {
   width: 8px;
   background: #ececec;

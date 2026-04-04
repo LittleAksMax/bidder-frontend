@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useContext, useReducer, Dispatch, FC } from 'react';
-import { RuleNode } from '../../api/types';
+import { RuleNode } from '../../api/nestedpolicy.types';
 import { ReadonlyPath } from './treeUtils';
 import { setAtPath, updateAtPath } from './treeUtils';
 

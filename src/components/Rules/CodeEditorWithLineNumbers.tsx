@@ -1,4 +1,4 @@
-import { FC, useMemo, useRef } from 'react';
+import { FC, KeyboardEvent, useMemo, useRef } from 'react';
 
 interface CodeEditorWithLineNumbersProps {
   id: string;
@@ -14,12 +14,41 @@ const CodeEditorWithLineNumbers: FC<CodeEditorWithLineNumbersProps> = ({
   onChange,
 }) => {
   const gutterRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const lineCount = useMemo<number>(() => Math.max(1, value.split('\n').length), [value]);
 
   const handleScroll = (nextScrollTop: number): void => {
     if (gutterRef.current) {
       gutterRef.current.scrollTop = nextScrollTop;
     }
+  };
+
+  // Make sure Tab adds 2 spaces instead of exiting focus
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    event.preventDefault();
+
+    const textarea = event.currentTarget;
+    const indent = '  '; // 2 spaces
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const nextValue = `${value.slice(0, selectionStart)}${indent}${value.slice(selectionEnd)}`;
+    const nextCursorPosition = selectionStart + indent.length;
+
+    onChange(nextValue);
+
+    window.requestAnimationFrame(() => {
+      if (!textareaRef.current) {
+        return;
+      }
+
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(nextCursorPosition, nextCursorPosition);
+      handleScroll(textareaRef.current.scrollTop);
+    });
   };
 
   return (
@@ -32,10 +61,12 @@ const CodeEditorWithLineNumbers: FC<CodeEditorWithLineNumbersProps> = ({
         ))}
       </div>
       <textarea
+        ref={textareaRef}
         id={id}
         className="transpiled-editor-textarea"
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onKeyDown={handleKeyDown}
         onScroll={(event) => handleScroll(event.currentTarget.scrollTop)}
         spellCheck={false}
         aria-label={ariaLabel}

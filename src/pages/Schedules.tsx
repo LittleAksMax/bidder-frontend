@@ -1,38 +1,17 @@
-import { CSSProperties, FC, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Form, Table } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { FC, useEffect, useMemo, useState } from 'react';
+import { Card } from 'react-bootstrap';
 import { apiClient } from '../api/ApiClient';
-import { ProfileGroup, ScheduledJob } from '../api/types';
-import CreateButton from '../components/buttons/CreateButton';
-import DeleteButton from '../components/buttons/DeleteButton';
-import DoubleChevronButton from '../components/buttons/DoubleChevronButton';
-import ViewChangeLogButton from '../components/buttons/ViewChangeLogButton';
+import { ProfileGroup } from '../api/profile.types';
+import { ScheduledJob } from '../api/schedule.types';
+import BackToHomeButton from '../components/buttons/BackToHomeButton';
 import UserLogsModal from '../components/Lists/UserLogsModal';
+import PageToolbar from '../components/PageToolbar';
+import ScheduleCreateForm, {
+  ScheduleSellerGroup,
+} from '../components/Schedules/ScheduleCreateForm';
+import SchedulesTable from '../components/Schedules/SchedulesTable';
 import Page from './Page';
 import './Schedules.css';
-
-const getScheduleStateStyle = (state: string): CSSProperties => {
-  if (state === 'FAILED') {
-    return { color: '#dc3545' };
-  }
-
-  if (state === 'PROCESSING') {
-    return { color: '#f0ad4e' };
-  }
-
-  return { color: 'black' };
-};
-
-const formatDueAt = (date: Date): string => {
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear().toString();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
-
-  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-};
 
 const sortSchedulesByDueAt = (jobs: ScheduledJob[]): ScheduledJob[] =>
   [...jobs].sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
@@ -43,7 +22,6 @@ type UserLogsContext = {
 };
 
 const Schedules: FC = () => {
-  const navigate = useNavigate();
   const [schedules, setSchedules] = useState<ScheduledJob[]>([]);
   const [sellerGroups, setSellerGroups] = useState<ProfileGroup[]>([]);
   const [selectedSellerName, setSelectedSellerName] = useState('');
@@ -87,7 +65,7 @@ const Schedules: FC = () => {
       ),
     [profiles, schedules],
   );
-  const unscheduledSellerGroups = useMemo(() => {
+  const unscheduledSellerGroups = useMemo<ScheduleSellerGroup[]>(() => {
     const unscheduledProfileIds = new Set(unscheduledProfiles.map((profile) => profile.profileId));
 
     return sellerGroups
@@ -255,207 +233,46 @@ const Schedules: FC = () => {
 
   return (
     <Page showSettings loading={loading}>
-      <div className="w-100 d-flex justify-content-end mb-3 schedules-toolbar">
-        <Button variant="outline-primary" size="sm" onClick={() => navigate('/')} className="me-2">
-          Back To Home
-        </Button>
-      </div>
+      <PageToolbar right={<BackToHomeButton className="me-2" />} className="schedules-toolbar" />
       <Card className="schedules-card">
         <Card.Header className="bg-success text-white d-flex align-items-center schedules-header">
           <h2 className="mb-0">Schedules</h2>
         </Card.Header>
         <Card.Body className="p-0 d-flex flex-column schedules-body">
-          <div className="schedules-table-scroll">
-            <Table striped hover responsive className="mb-0 schedules-table">
-              <thead>
-                <tr>
-                  <th>Seller Name</th>
-                  <th>Profile</th>
-                  <th>Due Date</th>
-                  <th>Days</th>
-                  <th>Hours</th>
-                  <th>Minutes</th>
-                  <th>State</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedSchedules.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-4 text-muted">
-                      No schedules found.
-                    </td>
-                  </tr>
-                ) : (
-                  sortedSchedules.map((schedule) => {
-                    const intervalDaysValue = Math.floor(schedule.interval / (24 * 60));
-                    const remainingAfterDays = schedule.interval % (24 * 60);
-                    const intervalHoursValue = Math.floor(remainingAfterDays / 60);
-                    const intervalMinutesValue = remainingAfterDays % 60;
-
-                    return (
-                      <tr key={`${schedule.profile.profileId}`}>
-                        <td>{schedule.sellerName}</td>
-                        <td>{schedule.profile.countryCode}</td>
-                        <td>{formatDueAt(schedule.dueAt)}</td>
-                        <td>{intervalDaysValue}</td>
-                        <td>{intervalHoursValue}</td>
-                        <td>{intervalMinutesValue}</td>
-                        <td style={{ ...getScheduleStateStyle(schedule.state) }}>
-                          <strong>{schedule.state}</strong>
-                        </td>
-                        <td className="schedules-delete-cell">
-                          <div className="schedules-row-actions">
-                            <ViewChangeLogButton
-                              className="schedules-view-log-btn"
-                              onClick={() =>
-                                setUserLogsContext({
-                                  profileId: schedule.profile.profileId,
-                                  profileLabel: `${schedule.sellerName} - ${schedule.profile.countryCode}`,
-                                })
-                              }
-                              buttonText="Schedule Logs"
-                            />
-                            <DoubleChevronButton
-                              className="schedules-expand-btn"
-                              onClick={() =>
-                                void handlePrioritiseSchedule(schedule.profile.profileId)
-                              }
-                              disabled={
-                                schedule.dueAt.getTime() <= Date.now() ||
-                                schedule.state === 'PROCESSING'
-                              }
-                            />
-                            <DeleteButton
-                              className="schedules-delete-btn"
-                              onClick={() => void handleDeleteSchedule(schedule.profile.profileId)}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
-          </div>
+          <SchedulesTable
+            schedules={sortedSchedules}
+            onOpenLogs={(schedule) =>
+              setUserLogsContext({
+                profileId: schedule.profile.profileId,
+                profileLabel: `${schedule.sellerName} - ${schedule.profile.countryCode}`,
+              })
+            }
+            onPrioritise={(profileId) => void handlePrioritiseSchedule(profileId)}
+            onDelete={(profileId) => void handleDeleteSchedule(profileId)}
+          />
         </Card.Body>
         <Card.Footer className="schedules-footer">
           <div className="d-flex justify-content-end align-items-center schedules-footer-actions">
-            <Form
-              className="d-flex align-items-center schedules-create-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleCreateSchedule();
+            <ScheduleCreateForm
+              creating={creating}
+              canCreate={canCreate}
+              sellerGroups={unscheduledSellerGroups}
+              selectedSellerName={effectiveSelectedSellerName}
+              selectedProfileId={effectiveSelectedProfileId}
+              profiles={sellerFilteredProfiles}
+              intervalDays={intervalDays}
+              intervalHours={intervalHours}
+              intervalMinutes={intervalMinutes}
+              onSellerNameChange={(sellerName) => {
+                setSelectedSellerName(sellerName);
+                setSelectedProfileId('');
               }}
-            >
-              <div className="schedules-field-group">
-                <Form.Label htmlFor="schedule-seller" className="mb-0 schedules-create-label">
-                  Seller
-                </Form.Label>
-                <Form.Select
-                  id="schedule-seller"
-                  size="sm"
-                  className="schedules-create-seller-select"
-                  value={effectiveSelectedSellerName}
-                  onChange={(event) => {
-                    setSelectedSellerName(event.target.value);
-                    setSelectedProfileId('');
-                  }}
-                  disabled={creating || unscheduledSellerGroups.length === 0}
-                >
-                  {unscheduledSellerGroups.length === 0 ? (
-                    <option value="">No unscheduled sellers</option>
-                  ) : (
-                    unscheduledSellerGroups.map((sellerGroup) => (
-                      <option key={sellerGroup.sellerName} value={sellerGroup.sellerName}>
-                        {sellerGroup.sellerName}
-                      </option>
-                    ))
-                  )}
-                </Form.Select>
-              </div>
-
-              <div className="schedules-field-group">
-                <Form.Label htmlFor="schedule-profile" className="mb-0 schedules-create-label">
-                  Profile
-                </Form.Label>
-                <Form.Select
-                  id="schedule-profile"
-                  size="sm"
-                  className="schedules-create-select"
-                  value={effectiveSelectedProfileId}
-                  onChange={(event) => setSelectedProfileId(event.target.value)}
-                  disabled={creating || sellerFilteredProfiles.length === 0}
-                >
-                  {sellerFilteredProfiles.length === 0 ? (
-                    <option value="">No unscheduled profiles</option>
-                  ) : (
-                    sellerFilteredProfiles.map((profile) => (
-                      <option key={profile.profileId} value={profile.profileId}>
-                        {profile.countryCode}
-                      </option>
-                    ))
-                  )}
-                </Form.Select>
-              </div>
-
-              <div className="schedules-field-group">
-                <Form.Label htmlFor="schedule-days" className="mb-0 schedules-create-label">
-                  Days
-                </Form.Label>
-                <Form.Control
-                  id="schedule-days"
-                  type="number"
-                  size="sm"
-                  min={0}
-                  step={1}
-                  className="schedules-create-duration"
-                  placeholder="0"
-                  value={intervalDays}
-                  onChange={(event) => setIntervalDays(event.target.value)}
-                  disabled={creating || sellerFilteredProfiles.length === 0}
-                />
-              </div>
-
-              <div className="schedules-field-group">
-                <Form.Label htmlFor="schedule-hours" className="mb-0 schedules-create-label">
-                  Hours
-                </Form.Label>
-                <Form.Control
-                  id="schedule-hours"
-                  type="number"
-                  size="sm"
-                  min={0}
-                  step={1}
-                  className="schedules-create-duration"
-                  placeholder="0"
-                  value={intervalHours}
-                  onChange={(event) => setIntervalHours(event.target.value)}
-                  disabled={creating || sellerFilteredProfiles.length === 0}
-                />
-              </div>
-
-              <div className="schedules-field-group">
-                <Form.Label htmlFor="schedule-minutes" className="mb-0 schedules-create-label">
-                  Minutes
-                </Form.Label>
-                <Form.Control
-                  id="schedule-minutes"
-                  type="number"
-                  size="sm"
-                  min={0}
-                  step={1}
-                  className="schedules-create-duration"
-                  placeholder="0"
-                  value={intervalMinutes}
-                  onChange={(event) => setIntervalMinutes(event.target.value)}
-                  disabled={creating || sellerFilteredProfiles.length === 0}
-                />
-              </div>
-
-              <CreateButton onClick={() => void handleCreateSchedule()} disabled={!canCreate} />
-            </Form>
+              onProfileIdChange={setSelectedProfileId}
+              onIntervalDaysChange={setIntervalDays}
+              onIntervalHoursChange={setIntervalHours}
+              onIntervalMinutesChange={setIntervalMinutes}
+              onSubmit={() => void handleCreateSchedule()}
+            />
           </div>
         </Card.Footer>
       </Card>

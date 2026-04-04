@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { VARIABLE_TYPES } from '../../api/types';
+import { VARIABLE_TYPES } from '../../api/nestedpolicy.types';
 import {
   BranchNode,
   ConditionNode as ConvertConditionNode,
@@ -8,7 +8,7 @@ import {
   Node,
   Operator,
   TerminalNode as ConvertTerminalNode,
-} from '../../api/convert.types';
+} from '../../api/types';
 import { gradientColors } from './rulesUtil';
 import CreateButton from '../buttons/CreateButton';
 import DeleteButton from '../buttons/DeleteButton';
@@ -112,6 +112,21 @@ const getBoundStep = (metricType: MetricType): number => (metricType === 'decima
 const getDepthClassName = (depth: number): string => {
   const maxIndex = gradientColors.length - 1;
   return `condition-node-depth-${Math.min(depth, maxIndex)}`;
+};
+
+const TERMINAL_DELETE_CONFIRMATION = {
+  title: 'Delete terminal action?',
+  body: 'This will remove this terminal action.',
+};
+
+const CONDITION_DELETE_CONFIRMATION = {
+  title: 'Delete condition?',
+  body: 'This will remove this condition and any nested rules beneath it.',
+};
+
+const BRANCH_DELETE_CONFIRMATION = {
+  title: 'Delete branch?',
+  body: 'This will remove this branch and any nested rule attached to it.',
 };
 
 const normaliseOperatorValue = (value: unknown): Operator => {
@@ -304,7 +319,7 @@ const TerminalEditor: FC<TerminalEditorProps> = ({ node, onChange, onDelete }) =
         ) : null}
         <code className="terminal-node-hint">{holographicHint}</code>
       </div>
-      <DeleteButton onClick={onDelete} />
+      <DeleteButton onClick={onDelete} confirmation={TERMINAL_DELETE_CONFIRMATION} />
     </div>
   );
 };
@@ -442,7 +457,7 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
               ))}
             </select>
           </div>
-          <DeleteButton onClick={onDelete} />
+          <DeleteButton onClick={onDelete} confirmation={CONDITION_DELETE_CONFIRMATION} />
         </div>
       </div>
 
@@ -517,6 +532,7 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
               <DeleteButton
                 onClick={() => handleDeleteBranch(branchIndex)}
                 disabled={node.branches.length === 1}
+                confirmation={BRANCH_DELETE_CONFIRMATION}
               />
             </div>
             <NodeEditor

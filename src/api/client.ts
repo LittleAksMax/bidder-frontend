@@ -1,4 +1,4 @@
-import { SdkResponse } from './requests';
+import { SdkResponse } from './contracts';
 import { config } from './config';
 
 // Define a type for API request options
@@ -34,7 +34,8 @@ const extractApiErrorMessage = (payload: Record<string, any> | null): string | n
   ];
 
   const directMessage = messageCandidates.find(
-    (candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0,
+    (candidate): candidate is string =>
+      typeof candidate === 'string' && candidate.trim().length > 0,
   );
 
   if (directMessage) {
@@ -102,7 +103,7 @@ export const createApiRequest = async ({
     }
 
     return [
-      Boolean(responseJSON?.success),
+      responseJSON?.success as boolean,
       responseJSON?.data ?? null,
       responseJSON?.success ? null : new Error(apiErrorMessage ?? 'Request failed'),
     ];

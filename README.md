@@ -1,73 +1,62 @@
-# React + TypeScript + Vite
+# Bidder Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+- React, TypeScript, and Vite frontend for managing seller profiles, campaigns, policies, schedules, and logs.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `React`: UI composition.
+- `React Router`: route handling and auth-gated pages.
+- `React Bootstrap` and `Bootstrap`: shared UI primitives and layout styling.
+- `TypeScript`: static typing across the app.
+- `Vite`: development server and production build tooling.
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `npm install`: install dependencies.
+- `npm run dev`: start the local development server.
+- `npm run build`: run the TypeScript build and create a production bundle.
+- `npm run preview`: preview the production build locally.
+- `npm run lint`: run ESLint over the source files.
 
-## Expanding the ESLint configuration
+## Source Libraries
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `src/api`
+  - API clients, request helpers, auth integration, request contracts, DTO types, and mapping utilities.
+- `src/components`
+  - Root components
+    - Shared UI building blocks such as `Modal`, `PageToolbar`, `CenteredContainer`, and `ProductsList`.
+  - `Home`
+    - Home-page-specific controls.
+  - `Lists`
+    - Campaign, policy, and log list views, plus related modals and row helpers.
+  - `Policies`
+    - Policy creation/editing modals, policy display elements, and shared policy-editor logic.
+  - `Rules`
+    - Nested and script rule editors, editor state, and rule-tree utilities.
+  - `Schedules`
+    - Schedule table and schedule-creation form components.
+  - `auth`
+    - Authentication form components, redirects, and logout helpers.
+  - `buttons`
+    - Reusable action buttons such as create, edit, delete, and navigation controls.
+  - `icons`
+    - Shared icon components and SVG path definitions.
+- `src/pages`
+  - Route-level pages such as home, policies, schedules, login, register, help, and not-found.
+- `src/transpilation`
+  - Shared rule-editor types and transpilation-related helpers.
+- `src/App.tsx`
+  - Top-level route configuration.
+- `src/main.tsx`
+  - Application entry point.
+- `src/theme.css`
+  - Global theme and shared styling overrides.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Routes
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `/`: authenticated home page.
+- `/policies`: authenticated policy management page.
+- `/schedules`: authenticated schedule management page.
+- `/help`: authenticated help page.
+- `/login`: login page.
+- `/register`: registration page.

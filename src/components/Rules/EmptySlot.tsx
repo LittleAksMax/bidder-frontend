@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import CreateButton from '../buttons/CreateButton';
-import { VariableType } from '../../api/types';
+import { VariableType } from '../../api/nestedpolicy.types';
 import './styles/RuleNodes.css';
 
 interface EmptySlotProps {

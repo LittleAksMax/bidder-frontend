@@ -40,7 +40,7 @@ const LinkAmazonItem: FC<LinkAmazonItemProps> = ({ region, isAuthenticatedRegion
           aria-label="Amazon region authenticated"
           title="Authenticated"
         >
-          ✓
+          &#10003;
         </span>
       ) : (
         <span

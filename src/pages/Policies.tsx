@@ -1,15 +1,16 @@
 import { FC, useState, useEffect } from 'react';
-import { Card, Button, Spinner } from 'react-bootstrap';
+import { Card } from 'react-bootstrap';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
-import { useNavigate } from 'react-router-dom';
 import CreateButton from '../components/buttons/CreateButton';
-
+import BackToHomeButton from '../components/buttons/BackToHomeButton';
 import CreatePolicyModal from '../components/Policies/CreatePolicyModal';
 import EditPolicyModal from '../components/Policies/EditPolicyModal';
 import PoliciesList from '../components/Lists/PoliciesList';
+import Loading from './Loading';
+import PageToolbar from '../components/PageToolbar';
 import './Policies.css';
-import { Policy } from '../api/types';
+import { Policy } from '../api/policy.types';
 
 const Policies: FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -18,7 +19,6 @@ const Policies: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editPolicyId, setEditPolicyId] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -130,11 +130,7 @@ const Policies: FC = () => {
   const policyToEdit = policies.find((policy) => policy.id === editPolicyId) || null; // Find policy by ID
   return (
     <Page showSettings>
-      <div className="w-100 d-flex justify-content-end mb-3 policies-toolbar">
-        <Button variant="outline-primary" size="sm" onClick={() => navigate('/')} className="me-2">
-          Back To Home
-        </Button>
-      </div>
+      <PageToolbar right={<BackToHomeButton className="me-2" />} className="policies-toolbar" />
       <Card className="policies-card">
         <Card.Header className="bg-success text-white d-flex align-items-center policies-header">
           <h2 className="mb-0">Policies</h2>
@@ -143,9 +139,7 @@ const Policies: FC = () => {
           <div className="policies-body-inner">
             <div className="policies-list-scroll">
               {isLoading ? (
-                <div className="policies-loading-state">
-                  <Spinner animation="border" />
-                </div>
+                <Loading className="policies-loading-state" />
               ) : (
                 <PoliciesList
                   policies={policies}

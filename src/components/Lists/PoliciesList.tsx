@@ -2,7 +2,7 @@ import { FC } from 'react';
 import { Badge, ListGroup } from 'react-bootstrap';
 import EditButton from '../buttons/EditButton';
 import DeleteButton from '../buttons/DeleteButton';
-import { Policy } from '../../api/types';
+import { Policy } from '../../api/policy.types';
 import MarketplacePill from '../Policies/MarketplacePill';
 import PolicyName from '../Policies/PolicyName';
 import './PoliciesList.css';
@@ -49,6 +49,11 @@ const PoliciesList: FC<PoliciesListProps> = ({
             <DeleteButton
               onClick={() => onDelete(policy.id)}
               disabled={!hasLoadedDeleteConstraints || isInUse}
+              confirmation={{
+                title: 'Delete policy?',
+                body: `This will permanently delete "${policy.name}".`,
+                confirmLabel: 'Delete Policy',
+              }}
             />
           </span>
         </ListGroup.Item>

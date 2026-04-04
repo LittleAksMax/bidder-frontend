@@ -1,7 +1,8 @@
 import { FC, useEffect, useState } from 'react';
-import { Modal, ListGroup, Spinner } from 'react-bootstrap';
+import { Modal, ListGroup } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { Policy } from '../../api/types';
+import { Policy } from '../../api/policy.types';
+import Loading from '../../pages/Loading';
 import './policy-modal.css';
 
 interface AssignPolicyModalProps {
@@ -41,9 +42,7 @@ const AssignPolicyModal: FC<AssignPolicyModalProps> = ({
       </Modal.Header>
       <Modal.Body className="assign-policy-modal-body">
         {loading ? (
-          <div className="d-flex justify-content-center align-items-center assign-policy-loading">
-            <Spinner animation="border" />
-          </div>
+          <Loading className="assign-policy-loading" />
         ) : (
           <ListGroup>
             {policies.map((policy) => (

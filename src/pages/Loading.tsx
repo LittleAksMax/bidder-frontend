@@ -2,10 +2,15 @@ import { FC } from 'react';
 import { Spinner } from 'react-bootstrap';
 import './Loading.css';
 
-const Loading: FC = () => (
-  <div className="loading-root">
+interface LoadingProps {
+  className?: string;
+  label?: string;
+}
+
+const Loading: FC<LoadingProps> = ({ className, label = 'Loading...' }) => (
+  <div className={['loading-root', className].filter(Boolean).join(' ')}>
     <Spinner animation="border" role="status">
-      <span className="visually-hidden">Loading...</span>
+      <span className="visually-hidden">{label}</span>
     </Spinner>
   </div>
 );

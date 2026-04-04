@@ -1,16 +1,8 @@
-import {
-  Profile,
-  Campaign,
-  Adgroup,
-  Policy,
-  BidResponse,
-  UserLogResponse,
-  UserLogsPageResponse,
-  ProfileGroup,
-  CampaignGroup,
-  AttachedPolicyDTO,
-  ScheduledJob,
-} from './types';
+import { Adgroup, Campaign, CampaignCache, CampaignGroup } from './campaign.types';
+import { BidResponse, UserLogsPageResponse } from './logs.types';
+import { AttachedPolicyDTO, Policy } from './policy.types';
+import { Profile, ProfileGroup } from './profile.types';
+import { ScheduledJob } from './schedule.types';
 import {
   ConvertScriptToTreeRequest,
   ConvertTreeToScriptRequest,
@@ -21,7 +13,23 @@ import {
 } from './convert.types';
 import { createApiRequest } from './client';
 import { authClient } from './AuthClient';
-import { AttachPolicyRequest, DetachPolicyRequest } from './requests';
+import {
+  AttachPolicyRequest,
+  ConvertResponse,
+  DetachPolicyRequest,
+  PolicyAssignmentInput,
+} from './contracts';
+import {
+  buildPolicyMap,
+  buildProfilesById,
+  createEmptyCampaignCache,
+  mapBidResponse,
+  mapPolicy,
+  mapProfileGroup,
+  mapScheduledJob,
+  mapUserLogResponse,
+  parseAttachedPolicies,
+} from './util';
 
 const getAuthKeyParam = async () => {
   if (!authClient.isAuthenticated()) {
@@ -29,19 +37,6 @@ const getAuthKeyParam = async () => {
   }
   const token = await authClient.getAccessToken();
   return token ? { authKey: token } : {};
-};
-
-type PolicyAssignmentInput = {
-  profileId: number;
-  campaignId: string;
-  adgroupId: string;
-  policyId: string;
-  isLive: boolean;
-};
-
-type ConvertResponse<T> = {
-  result: T | null;
-  errorMessage: string | null;
 };
 
 const VALID_CONVERT_OPERATORS = new Set<Operator>(['+', '-', '=']);
@@ -67,11 +62,19 @@ const normaliseConvertNodeOperators = (node: unknown): ConvertNode | null => {
   const candidate = node as Record<string, unknown>;
   const nextNode: ConvertNode = {};
 
-  if (candidate.terminal && typeof candidate.terminal === 'object' && !Array.isArray(candidate.terminal)) {
+  if (
+    candidate.terminal &&
+    typeof candidate.terminal === 'object' &&
+    !Array.isArray(candidate.terminal)
+  ) {
     const terminal = candidate.terminal as Record<string, unknown>;
     const operator = parseConvertOperator(terminal.operator);
 
-    if (!operator || typeof terminal.amount !== 'number' || typeof terminal.percentage !== 'boolean') {
+    if (
+      !operator ||
+      typeof terminal.amount !== 'number' ||
+      typeof terminal.percentage !== 'boolean'
+    ) {
       return null;
     }
 
@@ -176,7 +179,9 @@ const serialiseConvertNodeOperators = (node: ConvertNode): Record<string, unknow
         upper: branch.upper ?? null,
         node: serialiseConvertNodeOperators(branch.node),
       })),
-      default: node.condition.default ? serialiseConvertNodeOperators(node.condition.default) : null,
+      default: node.condition.default
+        ? serialiseConvertNodeOperators(node.condition.default)
+        : null,
     };
   }
 
@@ -186,33 +191,19 @@ const serialiseConvertNodeOperators = (node: ConvertNode): Record<string, unknow
 class ApiClient {
   private cachedPolicyMap: Record<string, Policy> | null = null;
   private cachedProfiles: ProfileGroup[] | null = null;
-  private cachedCampaigns: Record<string, Record<number, CampaignGroup>> = {
-    EU: {},
-    US: {},
-    FE: {},
-  };
+  private cachedCampaigns: CampaignCache = createEmptyCampaignCache();
   private cachedAuthenticatedRegions: string[] | null = null;
 
-  private clearCampaignCache(): void {
-    this.cachedCampaigns = {
-      EU: {},
-      US: {},
-      FE: {},
-    };
+  private clearPolicyCache(): void {
+    this.cachedPolicyMap = null;
   }
 
-  private parseAttachedPolicies(data: any[]): AttachedPolicyDTO[] {
-    return data
-      .map((item) => ({
-        campaignId: item.campaign_id as string,
-        adgroupId: item.adgroup_id as string,
-        policyId: item.policy_id as string,
-        isLive: item.is_live ?? false,
-      }))
-      .filter(
-        (item) =>
-          item.policyId.length > 0 && (item.campaignId.length > 0 || item.adgroupId.length > 0),
-      );
+  private clearCampaignCache(): void {
+    this.cachedCampaigns = createEmptyCampaignCache();
+  }
+
+  private getCachedProfilesById(): Record<number, Profile> {
+    return buildProfilesById(this.cachedProfiles);
   }
 
   async getAttachedPolicies(profileId: number): Promise<AttachedPolicyDTO[]> {
@@ -229,7 +220,7 @@ class ApiClient {
       return [];
     }
 
-    return this.parseAttachedPolicies(data as any[]);
+    return parseAttachedPolicies(data as any[]);
   }
 
   async getActiveSellers(): Promise<string[]> {
@@ -239,23 +230,12 @@ class ApiClient {
         method: 'GET',
         ...(await getAuthKeyParam()),
       });
-      if (err || !succ) {
+      if (err || !succ || !data) {
         console.error(err);
         return [];
       }
 
-      this.cachedProfiles = (data as any[]).map((seller) => ({
-        id: seller.id,
-        name: seller.name,
-        profiles: (seller.profiles as any[]).map((p) => ({
-          profileId: p.profile_id,
-          countryCode: p.country_code,
-          region: p.region,
-          accountId: p.account_id,
-          accountName: p.account_name,
-          accountType: p.account_type,
-        })),
-      }));
+      this.cachedProfiles = (data as any[]).map(mapProfileGroup);
     }
 
     return this.cachedProfiles.map((x) => x.name);
@@ -272,12 +252,15 @@ class ApiClient {
       console.error('Something went wrong while fetching seller profiles');
       return [];
     }
-    const sellerProfiles = this.cachedProfiles.filter((seller) => seller.name == sellerName);
-    if (sellerProfiles.length !== 1) {
+
+    const sellerProfileGroup = this.cachedProfiles.find((seller) => seller.name === sellerName);
+
+    if (!sellerProfileGroup) {
       console.error('No profile found for seller');
       return [];
     }
-    return sellerProfiles[0]!.profiles;
+
+    return sellerProfileGroup.profiles;
   }
 
   async getScheduledJobs(): Promise<ScheduledJob[]> {
@@ -296,28 +279,11 @@ class ApiClient {
       return [];
     }
 
-    const activeSellers = await this.getActiveSellers();
-    for (const seller of activeSellers) {
-      await this.getProfilesForSeller(seller);
-    }
+    const profilesById = this.getCachedProfilesById();
 
-    const profilesById = Object.fromEntries(
-      this.cachedProfiles!.flatMap(({ profiles }) =>
-        profiles.map((p) => [p.profileId, p] as const),
-      ),
-    ) as Record<number, Profile>;
-
-    return (data as any[]).map((s) => {
-      const resolvedProfileId = Number.parseInt(s.profile_id as string);
-
-      return {
-        profile: profilesById[resolvedProfileId]!,
-        sellerName: s.seller_name as string,
-        dueAt: new Date(s.due_at),
-        interval: Number.parseInt(s.interval_minutes),
-        state: s.state as string,
-      };
-    });
+    return (data as any[])
+      .map((schedule) => mapScheduledJob(schedule, profilesById))
+      .filter((schedule): schedule is ScheduledJob => schedule !== null);
   }
 
   async createSchedule(
@@ -350,27 +316,9 @@ class ApiClient {
       return null;
     }
 
-    const profilesById = Object.fromEntries(
-      this.cachedProfiles!.flatMap(({ profiles }) =>
-        profiles.map((profile) => [profile.profileId, profile] as const),
-      ),
-    ) as Record<number, Profile>;
+    const profilesById = this.getCachedProfilesById();
 
-    const resolvedProfileId = Number.parseInt(data.profile_id as string);
-    const resolvedInterval = Number.parseInt(data.interval_minutes as string);
-    const dueAtValue = data.due_at as string;
-
-    if (!profilesById[resolvedProfileId]) {
-      return null;
-    }
-
-    return {
-      profile: profilesById[resolvedProfileId],
-      sellerName: data.seller_name as string,
-      dueAt: new Date(dueAtValue as string),
-      interval: resolvedInterval,
-      state: data.state as string,
-    };
+    return mapScheduledJob(data, profilesById);
   }
 
   async deleteSchedule(profileId: number): Promise<boolean> {
@@ -446,54 +394,55 @@ class ApiClient {
       }
     });
 
-    const campaigns: Campaign[] = (data as any[]).map((c) => {
-      const campaignPolicyId = (c.policy_id ?? c.policyId ?? null) as string | null;
-      const campaignIsPolicyLive = (c.policy_is_live ??
-        c.policyIsLive ??
-        campaignPolicyId !== null) as boolean;
-      const campaignAttachment = attachmentByCampaignId.get(String(c.id));
+    const campaigns: Campaign[] = (data as any[]).map((campaign) => {
+      const campaignId = String(campaign.id);
+      const campaignPolicyId: string | null = campaign.policy_id ?? campaign.policyId ?? null;
+      const campaignIsPolicyLive: boolean =
+        campaign.policy_is_live ?? campaign.policyIsLive ?? campaignPolicyId !== null;
+      const campaignAttachment = attachmentByCampaignId.get(campaignId);
+      const rawAdgroups = Array.isArray(campaign.adgroups) ? campaign.adgroups : [];
 
-      const adgroups: Adgroup[] = ((c.adgroups as any[]) || []).map((a: any) => {
-        const adgroupPolicyId = (a.policy_id ?? a.policyId ?? campaignPolicyId ?? null) as
-          | string
-          | null;
-        const adgroupAttachment = attachmentByAdgroupId.get(String(a.id));
+      const adgroups: Adgroup[] = rawAdgroups.map((adgroup: any) => {
+        const adgroupId = String(adgroup.id);
+        const adgroupPolicyId: string | null =
+          adgroup.policy_id ?? adgroup.policyId ?? campaignPolicyId ?? null;
+        const adgroupAttachment = attachmentByAdgroupId.get(adgroupId);
         const resolvedPolicyId =
           adgroupAttachment?.policyId ?? campaignAttachment?.policyId ?? adgroupPolicyId;
-        const resolvedIsLive =
+        const resolvedIsLive: boolean =
           adgroupAttachment?.isLive ??
           campaignAttachment?.isLive ??
-          ((a.policy_is_live ??
-            a.policyIsLive ??
-            (resolvedPolicyId !== null ? campaignIsPolicyLive : false)) as boolean);
+          adgroup.policy_is_live ??
+          adgroup.policyIsLive ??
+          (resolvedPolicyId !== null ? campaignIsPolicyLive : false);
 
         return {
-          id: a.id as string,
-          name: a.name,
-          defaultBid: a.default_bid ?? a.defaultBid,
-          currencyCode: a.currency_code ?? a.currencyCode,
+          id: adgroupId,
+          name: adgroup.name as string,
+          defaultBid: (adgroup.default_bid ?? adgroup.defaultBid) as number,
+          currencyCode: (adgroup.currency_code ?? adgroup.currencyCode) as string,
           policyId: resolvedPolicyId,
           isPolicyLive: resolvedIsLive,
         };
       });
 
-      const nonNullAdgroupPolicyIds = adgroups
-        .map((adgroup) => adgroup.policyId)
-        .filter((policyId): policyId is string => policyId !== null);
-      const uniqueAdgroupPolicyIds = new Set(nonNullAdgroupPolicyIds);
+      const adgroupPolicyIds = adgroups.flatMap((adgroup) =>
+        adgroup.policyId === null ? [] : [adgroup.policyId],
+      );
+      const uniqueAdgroupPolicyIds = new Set(adgroupPolicyIds);
       const derivedCampaignPolicyId =
-        uniqueAdgroupPolicyIds.size === 1 ? (nonNullAdgroupPolicyIds[0] ?? null) : null;
+        uniqueAdgroupPolicyIds.size === 1 ? (adgroupPolicyIds[0] ?? null) : null;
       const derivedCampaignIsLive =
         adgroups.length > 0
           ? adgroups.every((adgroup) => adgroup.isPolicyLive)
           : (campaignAttachment?.isLive ?? campaignIsPolicyLive);
 
       return {
-        id: c.id as string,
-        name: c.name,
+        id: campaignId,
+        name: campaign.name as string,
         policyId: campaignAttachment?.policyId ?? derivedCampaignPolicyId ?? campaignPolicyId,
         isPolicyLive: derivedCampaignIsLive,
-        marketplace: c.marketplace,
+        marketplace: campaign.marketplace as string,
         adgroups,
       };
     });
@@ -525,25 +474,18 @@ class ApiClient {
 
   async getPolicies(): Promise<Policy[]> {
     if (!this.cachedPolicyMap) {
-      const [_, data, err] = await createApiRequest({
+      const [succ, data, err] = await createApiRequest({
         method: 'GET',
         endpoint: '/policies',
         ...(await getAuthKeyParam()),
       });
-      if (err) {
-        return [];
-      }
-      if (!data) {
+      if (err || !succ || !data) {
         return [];
       }
 
-      const policies = data as Policy[];
+      const policies = (data as any[]).map(mapPolicy);
 
-      // Reset policy Map
-      this.cachedPolicyMap = {};
-      policies.forEach((p) => {
-        this.cachedPolicyMap![p.id] = p;
-      });
+      this.cachedPolicyMap = buildPolicyMap(policies);
     }
     return Object.values(this.cachedPolicyMap);
   }
@@ -559,11 +501,11 @@ class ApiClient {
 
     if (err || !succ || data === null || typeof data !== 'object' || !('program' in data)) {
       if (err) {
-        console.error('[apiClient] Failed to convert script to tree', err);
+        console.error('[apiClient] Failed to convert script to tree rules', err);
       }
       return {
         result: null,
-        errorMessage: err?.message ?? 'Unable to convert the current script to JSON.',
+        errorMessage: err?.message ?? 'Unable to convert the current script to tree rules.',
       };
     }
 
@@ -572,7 +514,7 @@ class ApiClient {
     if (!normalisedProgram) {
       return {
         result: null,
-        errorMessage: 'Received an invalid operator in the converted tree.',
+        errorMessage: 'Received an invalid operator in the converted tree rule.',
       };
     }
 
@@ -606,11 +548,11 @@ class ApiClient {
 
     if (err || !succ || data === null || typeof data.script !== 'string') {
       if (err) {
-        console.error('[apiClient] Failed to convert tree to script', err);
+        console.error('[apiClient] Failed to convert tree rules to script', err);
       }
       return {
         result: null,
-        errorMessage: err?.message ?? 'Unable to convert the current JSON to script.',
+        errorMessage: err?.message ?? 'Unable to convert the current tree rule to script.',
       };
     }
 
@@ -636,19 +578,9 @@ class ApiClient {
       return null;
     }
 
-    // Create policy object from response
-    const realPolicy = {
-      id: data.id,
-      name: data.name,
-      marketplace: data.marketplace,
-      script: data.script,
-    };
+    const realPolicy = mapPolicy(data);
 
-    // Create empty cache (if somehow not already created), and add to cache
-    if (!this.cachedPolicyMap) {
-      this.cachedPolicyMap = {};
-    }
-    this.cachedPolicyMap[realPolicy.id] = realPolicy;
+    this.clearPolicyCache();
 
     return realPolicy;
   }
@@ -673,18 +605,9 @@ class ApiClient {
       return null;
     }
 
-    // Create updated policy object from response
-    const updatedPolicy = {
-      id: data.id,
-      name: data.name,
-      marketplace: data.marketplace,
-      script: data.script,
-    };
+    const updatedPolicy = mapPolicy(data);
 
-    // Update in cache if it exists
-    if (this.cachedPolicyMap) {
-      this.cachedPolicyMap[policyId] = updatedPolicy;
-    }
+    this.clearPolicyCache();
 
     return updatedPolicy;
   }
@@ -697,6 +620,10 @@ class ApiClient {
     });
     if (err) {
       return false;
+    }
+    if (succ) {
+      this.clearPolicyCache();
+      this.clearCampaignCache();
     }
     return succ;
   }
@@ -747,6 +674,7 @@ class ApiClient {
     }
 
     this.clearCampaignCache();
+
     return true;
   }
 
@@ -873,15 +801,7 @@ class ApiClient {
       return [];
     }
 
-    return (data as any[]).map(
-      (entry): BidResponse => ({
-        adgroupId: entry.adgroup_id as string,
-        oldPrice: entry.from_bid as number,
-        newPrice: entry.to_bid as number,
-        changeDate: new Date(entry.change_date as string),
-        isLive: entry.is_live as boolean,
-      }),
-    );
+    return (data as any[]).map(mapBidResponse);
   }
 
   private async getBidChangeLogs(
@@ -934,12 +854,7 @@ class ApiClient {
       };
     }
 
-    const parsedLogs = ((data.logs as any[]) ?? []).map(
-      (entry): UserLogResponse => ({
-        log: entry.log as string,
-        timestamp: new Date(entry.timestamp as string),
-      }),
-    );
+    const parsedLogs = ((data.logs as any[]) ?? []).map(mapUserLogResponse);
 
     return {
       logs: parsedLogs,
@@ -948,7 +863,7 @@ class ApiClient {
   }
 
   async getRedirectUrl(region: string): Promise<string | null> {
-    if (region != 'EU' && region != 'US' && region != 'FE') {
+    if (region !== 'EU' && region !== 'US' && region !== 'FE') {
       console.error('Invalid region', region);
       return null;
     }
@@ -987,7 +902,7 @@ class ApiClient {
       return [];
     }
 
-    this.cachedAuthenticatedRegions = data as string[];
+    this.cachedAuthenticatedRegions = (data as any[]).map((value) => String(value));
     return this.cachedAuthenticatedRegions;
   }
 }

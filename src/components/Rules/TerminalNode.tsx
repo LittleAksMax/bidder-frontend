@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react';
-import { TerminalRuleNode } from '../../api/types';
+import { TerminalRuleNode } from '../../api/nestedpolicy.types';
 import DeleteButton from '../buttons/DeleteButton';
 import { useEditorDispatch } from '../Rules/EditorContext';
 import { ReadonlyPath } from '../Rules/treeUtils';
@@ -12,7 +12,7 @@ interface TerminalNodeProps {
   onDelete?: () => void;
 }
 
-export const TerminalNode: FC<TerminalNodeProps> = ({ node, path, onEdit, onDelete }) => {
+export const TerminalNode: FC<TerminalNodeProps> = ({ node, path }) => {
   const [opType, setOpType] = useState<'add' | 'mul'>(node.op.type as 'add' | 'mul');
   const [isPercentage, setIsPercentage] = useState(node.op.amount.perc);
   const [isNegative, setIsNegative] = useState(node.op.amount.neg);
@@ -109,7 +109,13 @@ export const TerminalNode: FC<TerminalNodeProps> = ({ node, path, onEdit, onDele
         </span>
         <code className="terminal-node-hint">{holographicHint}</code>
       </div>
-      <DeleteButton onClick={() => dispatch({ type: 'set_slot', path, value: null })} />
+      <DeleteButton
+        onClick={() => dispatch({ type: 'set_slot', path, value: null })}
+        confirmation={{
+          title: 'Delete terminal action?',
+          body: 'This will remove this terminal action.',
+        }}
+      />
     </div>
   );
 };

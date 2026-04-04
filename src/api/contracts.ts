@@ -1,6 +1,6 @@
 // src/api/requests.ts
 
-import { TokenPair, User } from './types';
+import { TokenPair, User } from './auth.types';
 
 // Easier tuple-form of response objects
 export type SdkResponse<T> = [boolean, T | null, Error | null];
@@ -50,4 +50,17 @@ export type DetachPolicyRequest = {
   adgroup_id: string;
   campaign_id: string;
   profile_id: number;
+};
+
+export type PolicyAssignmentInput = {
+  profileId: number;
+  campaignId: string;
+  adgroupId: string;
+  policyId: string;
+  isLive: boolean;
+};
+
+export type ConvertResponse<T> = {
+  result: T | null;
+  errorMessage: string | null;
 };

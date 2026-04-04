@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import { ListGroup } from 'react-bootstrap';
-import { Product } from '../api/types';
+import { Product } from '../api/product.types';
 import './ProductsList.css';
 
 interface ProductsListProps {

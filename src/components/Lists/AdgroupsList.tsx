@@ -1,7 +1,8 @@
 import { FC } from 'react';
 import { Form, ListGroup } from 'react-bootstrap';
 import CampaignsListItem from './CampaignsListItem';
-import { Adgroup, Policy } from '../../api/types';
+import { Adgroup } from '../../api/campaign.types';
+import { Policy } from '../../api/policy.types';
 import PolicyPill from '../Policies/PolicyPill';
 import CreateButton from '../buttons/CreateButton';
 import EditButton from '../buttons/EditButton';
@@ -73,7 +74,14 @@ const AdgroupsList: FC<AdgroupsListProps> = ({
               <div className="adgroup-actions-section">
                 {policy ? (
                   <>
-                    <DeleteButton onClick={() => onRemovePolicy(adgroup.id)} />
+                    <DeleteButton
+                      onClick={() => onRemovePolicy(adgroup.id)}
+                      confirmation={{
+                        title: 'Remove ad group policy?',
+                        body: `This will detach the current policy from "${adgroup.name}".`,
+                        confirmLabel: 'Remove Policy',
+                      }}
+                    />
                     <EditButton onClick={() => onEditPolicy(adgroup.id)} />
                   </>
                 ) : (

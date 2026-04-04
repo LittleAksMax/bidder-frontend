@@ -1,7 +1,7 @@
 import { FC, useEffect, useMemo, useState } from 'react';
 import { Modal, Button, Table, Form } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { BidResponse } from '../../api/types';
+import { BidResponse } from '../../api/logs.types';
 import './ChangeLogModal.css';
 
 export type ChangeLogScope = 'seller' | 'profile' | 'campaign' | 'adgroup';

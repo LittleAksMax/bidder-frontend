@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { ConditionRuleNode, VARIABLE_TYPES, VariableType } from '../../api/types';
+import { ConditionRuleNode, VARIABLE_TYPES, VariableType } from '../../api/nestedpolicy.types';
 import Slot from './Slot';
 import { gradientColors, isPercentageVariable, defaultVariableRanges } from './rulesUtil';
 import DeleteButton from '../buttons/DeleteButton';
@@ -10,7 +10,6 @@ import './styles/RuleNodes.css';
 interface ConditionNodeProps {
   node: ConditionRuleNode;
   path: Path;
-  usedVars: Set<VariableType>;
   onVariableChange: (variable: VariableType) => void;
   onRangeChange: (range: { min: number; max: number }) => void;
 }
@@ -24,7 +23,6 @@ const getDepthClassName = (depth: number): string => {
 export const ConditionNode: FC<ConditionNodeProps> = ({
   node,
   path,
-  usedVars,
   onVariableChange,
   onRangeChange,
 }) => {
@@ -87,7 +85,13 @@ export const ConditionNode: FC<ConditionNodeProps> = ({
             />
             {isPercentageVariable(node.variable) && <span>%</span>}
           </div>
-          <DeleteButton onClick={() => dispatch({ type: 'set_slot', path, value: null })} />
+          <DeleteButton
+            onClick={() => dispatch({ type: 'set_slot', path, value: null })}
+            confirmation={{
+              title: 'Delete condition?',
+              body: 'This will remove this condition and both of its branches.',
+            }}
+          />
         </div>
       </div>
       <div className="condition-node-section">

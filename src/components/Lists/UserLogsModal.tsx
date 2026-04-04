@@ -1,7 +1,8 @@
 import { FC, useEffect, useState } from 'react';
-import { Button, Modal, Spinner, Table } from 'react-bootstrap';
+import { Button, Modal, Table } from 'react-bootstrap';
 import { apiClient } from '../../api/ApiClient';
-import { UserLogResponse } from '../../api/types';
+import { UserLogResponse } from '../../api/logs.types';
+import Loading from '../../pages/Loading';
 import './UserLogsModal.css';
 
 interface UserLogsModalProps {
@@ -59,9 +60,7 @@ const UserLogsModal: FC<UserLogsModalProps> = ({ show, onHide, profileId, profil
       </Modal.Header>
       <Modal.Body className="user-logs-modal-body">
         {loading ? (
-          <div className="user-logs-loading d-flex justify-content-center align-items-center">
-            <Spinner animation="border" />
-          </div>
+          <Loading className="user-logs-loading" />
         ) : (
           <>
             <div className="user-logs-table-wrapper">
