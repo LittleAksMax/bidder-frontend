@@ -2,11 +2,22 @@
   background: #f8f9fa;
 }
 
-.page-settings-actions {
+.page-header {
   position: absolute;
   top: 12px;
-  right: 24px;
+  left: 5%;
+  right: 5%;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-username {
+  font-size: 1rem;
+}
+
+.page-settings-actions {
   display: flex;
   gap: 0.5rem;
 }

@@ -201,6 +201,21 @@ class AuthClient {
 
     return accessToken;
   }
+
+  getStoredAccessToken(): string | null {
+    return localStorage.getItem(accessTokenKey);
+  }
+
+  getStoredUsername(): string {
+    const username = localStorage.getItem(usernameKey);
+
+    if (username) {
+      return username;
+    }
+
+    localStorage.setItem(usernameKey, 'NO USER');
+    return 'NO USER';
+  }
 }
 
 export const authClient = new AuthClient();

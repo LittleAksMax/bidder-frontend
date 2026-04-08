@@ -32,10 +32,11 @@ import {
 } from './util';
 
 const getAuthKeyParam = async () => {
-  if (!authClient.isAuthenticated()) {
-    return {};
+  if (authClient.isAuthenticated()) {
+    await authClient.ensureAuthenticated();
   }
-  const token = await authClient.getAccessToken();
+
+  const token = authClient.getStoredAccessToken();
   return token ? { authKey: token } : {};
 };
 

@@ -1,9 +1,10 @@
 import { FC, ReactNode } from 'react';
 import { Container } from 'react-bootstrap';
+import { authClient } from '../api/AuthClient';
+import './Page.css';
 import SettingsMenu from './SettingsMenu';
 import AccountButton from './AccountButton';
 import Loading from './Loading';
-import './Page.css';
 
 interface PageProps {
   children: ReactNode;
@@ -16,9 +17,14 @@ const Page: FC<PageProps> = ({ children, showSettings = false, loading = false }
     fluid
     className="vh-100 d-flex flex-column justify-content-center align-items-center p-0 position-relative page-root"
   >
-    <div className="page-settings-actions">
-      <SettingsMenu show={showSettings} />
-      <AccountButton show={showSettings} />
+    <div className="page-header">
+      <span className="page-username">
+        Hello: <strong>{authClient.getStoredUsername()}</strong>
+      </span>
+      <div className="page-settings-actions">
+        <SettingsMenu show={showSettings} />
+        <AccountButton show={showSettings} />
+      </div>
     </div>
     <div className="page-content-shell">{loading ? <Loading /> : children}</div>
   </Container>
