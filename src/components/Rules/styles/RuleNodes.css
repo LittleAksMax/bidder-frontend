@@ -225,13 +225,13 @@
 
 .terminal-node-percent-on {
   color: blue;
+  font-weight: bold;
 }
 
 .terminal-node-percent-off {
-  color: gray;
+  color: #ccc;
 }
 
 .terminal-node-hint {
-  color: #aaa;
   font-style: italic;
 }

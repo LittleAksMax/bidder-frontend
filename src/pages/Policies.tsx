@@ -105,25 +105,23 @@ const Policies: FC = () => {
     }
   };
 
-  const handleCreate = async (p: Policy): Promise<boolean> => {
-    // Close modal in any case
-    setShowCreateModal(false);
-
+  const handleCreate = async (p: Policy): Promise<string | null> => {
     // Optimistic update: add temp policy immediately
     const tempId = `temp-${Date.now()}`;
     const tempPolicy = { ...p, id: tempId };
     setPolicies((prev) => [...prev, tempPolicy]);
 
-    const res = await apiClient.createPolicy(p.name, p.marketplace, p.script);
+    const { result, errorMessage } = await apiClient.createPolicy(p.name, p.marketplace, p.script);
 
-    if (res) {
+    if (result) {
+      setShowCreateModal(false);
       // Replace temp policy with real one
-      setPolicies((prev) => prev.map((policy) => (policy.id === tempId ? res : policy)));
-      return true;
+      setPolicies((prev) => prev.map((policy) => (policy.id === tempId ? result : policy)));
+      return null;
     } else {
       // Remove temp policy on failure
       setPolicies((prev) => prev.filter((policy) => policy.id !== tempId));
-      return false;
+      return errorMessage ?? 'Unable to create the policy.';
     }
   };
 

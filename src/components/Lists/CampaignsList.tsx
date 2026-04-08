@@ -10,6 +10,8 @@ import ExpandButton from './ExpandButton';
 import AssignPolicyModal from './AssignPolicyModal';
 import CreateButton from '../buttons/CreateButton';
 import DeleteButton from '../buttons/DeleteButton';
+import EditButton from '../buttons/EditButton';
+import ViewButton from '../buttons/ViewButton';
 import './CampaignsList.css';
 import ChangeLogModal, { ChangeLogScope } from './ChangeLogModal';
 import CampaignsListItem from './CampaignsListItem';
@@ -396,22 +398,9 @@ const CampaignsList: FC<CampaignsListProps> = ({
                         className="me-1 campaign-row-action"
                       />
                       <span className="campaign-row-name-wrap">
-                        <button
-                          type="button"
-                          className="changelog-name-btn campaign-row-action campaign-name-button"
-                          onClick={() =>
-                            setChangeLogContext({
-                              scope: 'campaign',
-                              campaignId: campaign.id,
-                              adgroupNamesById: getAdgroupNamesById(campaign.id),
-                            })
-                          }
-                          disabled={!hasSellerAndProfile}
-                          aria-label={`View change log for campaign ${campaign.name}`}
-                          title={`View change log for campaign ${campaign.name}`}
-                        >
+                        <span className="campaign-name-button">
                           {campaign.name}
-                        </button>
+                        </span>
                       </span>
                     </>
                   }
@@ -420,7 +409,7 @@ const CampaignsList: FC<CampaignsListProps> = ({
                       <Form.Check
                         id={`campaign-live-${campaign.id}`}
                         type="checkbox"
-                        label="Toggle All"
+                        label="Toggle All Live"
                         checked={areAllAdgroupsLive}
                         onChange={(event) =>
                           handleToggleCampaignPolicyLive(campaign.id, event.target.checked)
@@ -432,16 +421,29 @@ const CampaignsList: FC<CampaignsListProps> = ({
                   }
                   buttonsSection={
                     <>
-                      <CreateButton
-                        onClick={() =>
-                          setAssignPolicyContext({
-                            level: 'campaign',
-                            campaignId: campaign.id,
-                            campaignMarketplace: countryCode,
-                          })
-                        }
-                        className="campaign-row-action"
-                      />
+                      {campaignHasAnyPolicy ? (
+                        <EditButton
+                          onClick={() =>
+                            setAssignPolicyContext({
+                              level: 'campaign',
+                              campaignId: campaign.id,
+                              campaignMarketplace: countryCode,
+                            })
+                          }
+                          className="campaign-row-action"
+                        />
+                      ) : (
+                        <CreateButton
+                          onClick={() =>
+                            setAssignPolicyContext({
+                              level: 'campaign',
+                              campaignId: campaign.id,
+                              campaignMarketplace: countryCode,
+                            })
+                          }
+                          className="campaign-row-action"
+                        />
+                      )}
                       <DeleteButton
                         onClick={() => handleRemoveCampaignPolicy(campaign.id)}
                         className="campaign-row-action"
@@ -450,6 +452,18 @@ const CampaignsList: FC<CampaignsListProps> = ({
                           body: `This will detach the current policy from "${campaign.name}" and its ad groups.`,
                           confirmLabel: 'Remove Policy',
                         }}
+                        disabled={!campaignHasAnyPolicy}
+                      />
+                      <ViewButton
+                        onClick={() =>
+                          setChangeLogContext({
+                            scope: 'campaign',
+                            campaignId: campaign.id,
+                            adgroupNamesById: getAdgroupNamesById(campaign.id),
+                          })
+                        }
+                        className="campaign-row-action"
+                        disabled={!hasSellerAndProfile}
                       />
                     </>
                   }

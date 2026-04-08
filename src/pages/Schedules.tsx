@@ -16,6 +16,16 @@ import './Schedules.css';
 const sortSchedulesByDueAt = (jobs: ScheduledJob[]): ScheduledJob[] =>
   [...jobs].sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
 
+const fetchSchedulesPageData = async (): Promise<{
+  scheduledJobs: ScheduledJob[];
+  sellerProfiles: ProfileGroup[];
+}> => {
+  const scheduledJobs = await apiClient.getScheduledJobs();
+  const sellerProfiles = await apiClient.getSellerProfiles();
+
+  return { scheduledJobs, sellerProfiles };
+};
+
 type UserLogsContext = {
   profileId: number;
   profileLabel: string;
@@ -37,15 +47,17 @@ const Schedules: FC = () => {
     let isMounted = true;
 
     const loadSchedules = async (): Promise<void> => {
-      const [scheduledJobs, sellerProfiles] = await Promise.all([
-        apiClient.getScheduledJobs(),
-        apiClient.getSellerProfiles(),
-      ]);
+      try {
+        const { scheduledJobs, sellerProfiles } = await fetchSchedulesPageData();
 
-      if (isMounted) {
-        setSchedules(sortSchedulesByDueAt(scheduledJobs));
-        setSellerGroups(sellerProfiles);
-        setLoading(false);
+        if (isMounted) {
+          setSchedules(sortSchedulesByDueAt(scheduledJobs));
+          setSellerGroups(sellerProfiles);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -55,6 +67,18 @@ const Schedules: FC = () => {
       isMounted = false;
     };
   }, []);
+
+  const handleRefreshSchedules = async (): Promise<void> => {
+    setLoading(true);
+
+    try {
+      const { scheduledJobs, sellerProfiles } = await fetchSchedulesPageData();
+      setSchedules(sortSchedulesByDueAt(scheduledJobs));
+      setSellerGroups(sellerProfiles);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const profiles = useMemo(() => sellerGroups.flatMap((seller) => seller.profiles), [sellerGroups]);
   const unscheduledProfiles = useMemo(
@@ -241,6 +265,7 @@ const Schedules: FC = () => {
         <Card.Body className="p-0 d-flex flex-column schedules-body">
           <SchedulesTable
             schedules={sortedSchedules}
+            onRefresh={() => void handleRefreshSchedules()}
             onOpenLogs={(schedule) =>
               setUserLogsContext({
                 profileId: schedule.profile.profileId,

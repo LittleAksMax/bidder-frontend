@@ -4,6 +4,7 @@ import { ScheduledJob } from '../../api/schedule.types';
 import DeleteButton from '../buttons/DeleteButton';
 import DoubleChevronButton from '../buttons/DoubleChevronButton';
 import ViewChangeLogButton from '../buttons/ViewChangeLogButton';
+import RefreshButton from '../buttons/RefreshButton';
 
 const getScheduleStateStyle = (state: string): CSSProperties => {
   if (state === 'FAILED') {
@@ -28,9 +29,7 @@ const formatDueAt = (date: Date): string => {
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 
-const getIntervalParts = (
-  interval: number,
-): { days: number; hours: number; minutes: number } => {
+const getIntervalParts = (interval: number): { days: number; hours: number; minutes: number } => {
   const days = Math.floor(interval / (24 * 60));
   const remainingAfterDays = interval % (24 * 60);
   const hours = Math.floor(remainingAfterDays / 60);
@@ -41,6 +40,7 @@ const getIntervalParts = (
 
 interface SchedulesTableProps {
   schedules: ScheduledJob[];
+  onRefresh: () => void;
   onOpenLogs: (schedule: ScheduledJob) => void;
   onPrioritise: (profileId: number) => void;
   onDelete: (profileId: number) => void;
@@ -48,6 +48,7 @@ interface SchedulesTableProps {
 
 const SchedulesTable: FC<SchedulesTableProps> = ({
   schedules,
+  onRefresh,
   onOpenLogs,
   onPrioritise,
   onDelete,
@@ -63,7 +64,9 @@ const SchedulesTable: FC<SchedulesTableProps> = ({
           <th>Hours</th>
           <th>Minutes</th>
           <th>State</th>
-          <th></th>
+          <th className="text-end">
+            <RefreshButton onClick={onRefresh} />
+          </th>
         </tr>
       </thead>
       <tbody>

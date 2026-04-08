@@ -17,18 +17,16 @@ interface ChangeLogModalProps {
   adgroupNamesById?: Record<string, string> | null;
 }
 
+// We need to use this because of floating point precision at 2d.p. not always working
+const toBidUnits = (value: number): number => Math.round((value + Number.EPSILON) * 100);
+
 const getNewBidClassName = (oldPrice: number, newPrice: number, threshold: number): string => {
-  const difference = newPrice - oldPrice;
+  const difference = toBidUnits(newPrice) - toBidUnits(oldPrice);
+  const thresholdUnits = toBidUnits(threshold);
 
-  if (difference >= threshold) return 'change-log-bid-value change-log-bid-value-up';
-  if (difference <= -threshold) return 'change-log-bid-value change-log-bid-value-down';
+  if (difference >= thresholdUnits) return 'change-log-bid-value change-log-bid-value-up';
+  if (difference <= -thresholdUnits) return 'change-log-bid-value change-log-bid-value-down';
   return 'change-log-bid-value change-log-bid-value-neutral';
-};
-
-const getPrefix = (oldPrice: number, newPrice: number) => {
-  if (newPrice > oldPrice) return '+';
-  if (newPrice < oldPrice) return '-';
-  return '';
 };
 
 const formatBidValue = (value: number): string => value.toFixed(2);
@@ -168,7 +166,6 @@ const ChangeLogModal: FC<ChangeLogModalProps> = ({
                     <span
                       className={getNewBidClassName(log.oldPrice, log.newPrice, bidColourThreshold)}
                     >
-                      {getPrefix(log.oldPrice, log.newPrice)}
                       {formatBidValue(log.newPrice)}
                     </span>
                   </td>

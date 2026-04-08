@@ -51,9 +51,7 @@
 }
 
 .icon-btn svg {
-  transition:
-    color 0.2s,
-    stroke 0.2s;
+  transition: color 0.2s;
 }
 
 .icon-btn-red {
@@ -61,7 +59,6 @@
 }
 .icon-btn-red svg {
   color: #dc3545 !important;
-  stroke: #dc3545 !important;
 }
 .icon-btn-red:hover,
 .icon-btn-red:focus {
@@ -71,7 +68,6 @@
 .icon-btn-red:hover svg,
 .icon-btn-red:focus svg {
   color: #fff !important;
-  stroke: #fff !important;
 }
 
 .icon-btn-yellow {
@@ -79,7 +75,6 @@
 }
 .icon-btn-yellow svg {
   color: #ffc107 !important;
-  stroke: #ffc107 !important;
 }
 .icon-btn-yellow:hover,
 .icon-btn-yellow:focus {
@@ -89,7 +84,6 @@
 .icon-btn-yellow:hover svg,
 .icon-btn-yellow:focus svg {
   color: #212529 !important;
-  stroke: #212529 !important;
 }
 
 .icon-btn-green {
@@ -97,7 +91,6 @@
 }
 .icon-btn-green svg {
   color: #198754 !important;
-  stroke: #198754 !important;
 }
 .icon-btn-green:hover,
 .icon-btn-green:focus {
@@ -107,7 +100,22 @@
 .icon-btn-green:hover svg,
 .icon-btn-green:focus svg {
   color: #fff !important;
-  stroke: #fff !important;
+}
+
+.icon-btn-turquoise {
+  color: #17a2b8 !important;
+}
+.icon-btn-turquoise svg {
+  color: #17a2b8 !important;
+}
+.icon-btn-turquoise:hover,
+.icon-btn-turquoise:focus {
+  background: #17a2b8 !important;
+  color: #fff !important;
+}
+.icon-btn-turquoise:hover svg,
+.icon-btn-turquoise:focus svg {
+  color: #fff !important;
 }
 
 .icon-btn-blue {
@@ -115,7 +123,6 @@
 }
 .icon-btn-blue svg {
   color: #0d6efd !important;
-  stroke: #0d6efd !important;
 }
 .icon-btn-blue:hover,
 .icon-btn-blue:focus {
@@ -125,7 +132,6 @@
 .icon-btn-blue:hover svg,
 .icon-btn-blue:focus svg {
   color: #fff !important;
-  stroke: #fff !important;
 }
 .modal-backdrop {
   position: fixed;

@@ -23,42 +23,52 @@ const PoliciesList: FC<PoliciesListProps> = ({
   hasLoadedDeleteConstraints,
 }) => (
   <ListGroup className="mb-3">
-    {policies.map((policy) => {
-      const isInUse = undeletablePolicyIds.has(policy.id);
+    {policies.length === 0 ? (
+      <ListGroup.Item className="text-center py-4 text-muted">No policies found.</ListGroup.Item>
+    ) : (
+      policies.map((policy) => {
+        const isInUse = undeletablePolicyIds.has(policy.id);
 
-      return (
-        <ListGroup.Item
-          key={policy.id}
-          className="d-flex align-items-center justify-content-between policies-list-item"
-        >
-          <div className="d-flex align-items-center policies-list-content">
-            <div className="d-flex flex-column">
-              <div className="policies-list-header">
-                <PolicyName name={policy.name} />
-                <MarketplacePill marketplace={policy.marketplace} fontSize={18} />
+        return (
+          <ListGroup.Item
+            key={policy.id}
+            className="d-flex align-items-center justify-content-between policies-list-item"
+            onClick={() => onEdit(policy.id)}
+          >
+            <div className="d-flex align-items-center policies-list-content">
+              <div className="d-flex flex-column">
+                <div className="policies-list-header">
+                  <PolicyName name={policy.name} />
+                  <MarketplacePill marketplace={policy.marketplace} fontSize={18} />
+                </div>
               </div>
             </div>
-          </div>
-          <span className="d-inline-flex policies-list-actions">
-            {isInUse ? (
-              <Badge bg="danger" pill className="policies-list-in-use-pill" title="Policy in use">
-                IN USE
-              </Badge>
-            ) : null}
-            <EditButton onClick={() => onEdit(policy.id)} />
-            <DeleteButton
-              onClick={() => onDelete(policy.id)}
-              disabled={!hasLoadedDeleteConstraints || isInUse}
-              confirmation={{
-                title: 'Delete policy?',
-                body: `This will permanently delete "${policy.name}".`,
-                confirmLabel: 'Delete Policy',
-              }}
-            />
-          </span>
-        </ListGroup.Item>
-      );
-    })}
+            <span className="d-inline-flex policies-list-actions" onClick={(event) => event.stopPropagation()}>
+              {isInUse ? (
+                <Badge
+                  bg="danger"
+                  pill
+                  className="policies-list-in-use-pill"
+                  title="Policy in use"
+                >
+                  IN USE
+                </Badge>
+              ) : null}
+              <EditButton onClick={() => onEdit(policy.id)} />
+              <DeleteButton
+                onClick={() => onDelete(policy.id)}
+                disabled={!hasLoadedDeleteConstraints || isInUse}
+                confirmation={{
+                  title: 'Delete policy?',
+                  body: `This will permanently delete "${policy.name}".`,
+                  confirmLabel: 'Delete Policy',
+                }}
+              />
+            </span>
+          </ListGroup.Item>
+        );
+      })
+    )}
   </ListGroup>
 );
 

@@ -7,10 +7,11 @@ import PolicyModalTitlebar from './PolicyModalTitlebar';
 import PolicyRuleEditor from './PolicyRuleEditor';
 import useGuardedEditorClose from './useGuardedEditorClose';
 import usePolicyRuleEditor from './usePolicyRuleEditor';
+import { STORAGE_KEYS } from '../../storageKeys';
 
 interface CreatePolicyModalProps {
   show: boolean;
-  handleCreate: (p: Policy) => Promise<boolean>;
+  handleCreate: (p: Policy) => Promise<string | null>;
   onClose: () => void;
 }
 
@@ -18,6 +19,7 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
   const [policyName, setPolicyName] = useState<string>('');
   const [marketplace, setMarketplace] = useState<string>('EU');
   const [marketplaces, setMarketplaces] = useState<string[]>(['EU']);
+  const [createError, setCreateError] = useState<string | null>(null);
   const {
     ruleType,
     scriptProgram,
@@ -38,6 +40,7 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
 
   useEffect(() => {
     if (!show) {
+      setCreateError(null);
       clearConversionError();
       return;
     }
@@ -49,12 +52,16 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
         return;
       }
 
+      const savedSellerId = window.localStorage.getItem(STORAGE_KEYS.sellerId);
+      const savedMarketplace = window.localStorage.getItem(STORAGE_KEYS.marketplace);
+      const selectedSeller =
+        savedSellerId != null
+          ? (sellerProfiles.find((seller) => seller.id === savedSellerId) ?? null)
+          : null;
+      const relevantProfiles =
+        selectedSeller?.profiles ?? sellerProfiles.flatMap((seller) => seller.profiles);
       const nextMarketplaces = Array.from(
-        new Set(
-          sellerProfiles.flatMap((seller) =>
-            seller.profiles.map((profile) => profile.countryCode).filter(Boolean),
-          ),
-        ),
+        new Set(relevantProfiles.map((profile) => profile.countryCode).filter(Boolean)),
       );
 
       if (nextMarketplaces.length === 0) {
@@ -62,8 +69,10 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
       }
 
       setMarketplaces(nextMarketplaces);
-      setMarketplace((currentMarketplace) =>
-        nextMarketplaces.includes(currentMarketplace) ? currentMarketplace : nextMarketplaces[0]!,
+      setMarketplace(
+        savedMarketplace && nextMarketplaces.includes(savedMarketplace)
+          ? savedMarketplace
+          : nextMarketplaces[0]!,
       );
     });
 
@@ -77,17 +86,22 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
       return;
     }
 
+    setCreateError(null);
     const nextScript = await ensureScriptProgram('Complete the rule before creating the policy.');
     if (nextScript === null) {
       return;
     }
 
-    await handleCreate({
+    const errorMessage = await handleCreate({
       id: null!,
       name: policyName,
       marketplace,
       script: nextScript,
     });
+
+    if (errorMessage) {
+      setCreateError(errorMessage);
+    }
   };
 
   return (
@@ -107,7 +121,7 @@ const CreatePolicyModal: FC<CreatePolicyModalProps> = ({ show, handleCreate, onC
         ruleType={ruleType}
         scriptProgram={scriptProgram}
         nestedProgram={nestedProgram}
-        errorMessage={conversionError}
+        errorMessage={conversionError ?? createError}
         onScriptChange={handleScriptChange}
         onNestedChange={handleNestedChange}
         onNestedSlotsFilledChange={setNestedSlotsFilled}

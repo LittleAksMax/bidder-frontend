@@ -54,7 +54,10 @@ const METRIC_LABELS: Record<Metric, string> = {
   spend: 'Spend',
 };
 
-const createEmptyNode = (): Node => ({});
+const createEmptyNode = (): Node => ({
+  terminal: null,
+  condition: null,
+});
 
 const createEmptyBranch = (): BranchNode => ({
   lower: 0,
@@ -75,8 +78,7 @@ const createEmptyTerminal = (): ConvertTerminalNode => ({
   percentage: false,
 });
 
-const isNodeEmpty = (node: Node | null | undefined): boolean =>
-  !node || (!node.condition && !node.terminal);
+const isNodeEmpty = (node: Node | null): boolean => !node || (!node.condition && !node.terminal);
 
 const isIntegerMetric = (metric: Metric): boolean =>
   metric === 'orders' || metric === 'impressions' || metric === 'clicks';
@@ -96,7 +98,7 @@ const normaliseBoundValue = (value: number, metricType: MetricType): number =>
 const normaliseAmountValue = (value: number): number =>
   clampToNonNegative(Math.round(value * 100) / 100);
 
-const parseNumberInputValue = (value: string, metricType: MetricType): number => {
+const parseRawBoundInputValue = (value: string, metricType: MetricType): number => {
   const parsedValue =
     metricType === 'integer' ? Number.parseInt(value || '0', 10) : Number.parseFloat(value || '0');
 
@@ -104,10 +106,24 @@ const parseNumberInputValue = (value: string, metricType: MetricType): number =>
     return 0;
   }
 
+  return clampToNonNegative(parsedValue);
+};
+
+const parseNumberInputValue = (value: string, metricType: MetricType): number => {
+  const parsedValue = parseRawBoundInputValue(value, metricType);
+
   return normaliseBoundValue(parsedValue, metricType);
 };
 
 const getBoundStep = (metricType: MetricType): number => (metricType === 'decimal' ? 0.01 : 1);
+
+const formatBoundInputValue = (value: number | null, metricType: MetricType): string => {
+  if (value === null) {
+    return '';
+  }
+
+  return metricType === 'decimal' ? value.toFixed(2) : String(value);
+};
 
 const getDepthClassName = (depth: number): string => {
   const maxIndex = gradientColors.length - 1;
@@ -139,20 +155,15 @@ const normaliseOperatorValue = (value: unknown): Operator => {
 };
 
 const areIntervalsValid = (branch: BranchNode): boolean => {
-  if (branch.lower !== null && branch.lower !== undefined && !Number.isFinite(branch.lower)) {
+  if (branch.lower !== null && !Number.isFinite(branch.lower)) {
     return false;
   }
 
-  if (branch.upper !== null && branch.upper !== undefined && !Number.isFinite(branch.upper)) {
+  if (branch.upper !== null && !Number.isFinite(branch.upper)) {
     return false;
   }
 
-  if (
-    branch.lower !== null &&
-    branch.lower !== undefined &&
-    branch.upper !== null &&
-    branch.upper !== undefined
-  ) {
+  if (branch.lower !== null && branch.upper !== null) {
     return branch.lower <= branch.upper;
   }
 
@@ -175,7 +186,7 @@ const areAllSlotsFilled = (node: Node | null): boolean => {
   return (
     node.condition.branches.length > 0 &&
     node.condition.branches.every(
-      (branch) => areIntervalsValid(branch) && areAllSlotsFilled(branch.node ?? null),
+      (branch) => areIntervalsValid(branch) && areAllSlotsFilled(branch.node),
     ) &&
     (node.condition.default == null || areAllSlotsFilled(node.condition.default))
   );
@@ -328,8 +339,8 @@ const NodeEditor: FC<NodeEditorProps> = ({ node, depth, onChange }) => {
   if (isNodeEmpty(node)) {
     return (
       <EmptyNodeSlot
-        onAddCondition={() => onChange({ condition: createEmptyCondition() })}
-        onAddTerminal={() => onChange({ terminal: createEmptyTerminal() })}
+        onAddCondition={() => onChange({ terminal: null, condition: createEmptyCondition() })}
+        onAddTerminal={() => onChange({ terminal: createEmptyTerminal(), condition: null })}
       />
     );
   }
@@ -339,7 +350,7 @@ const NodeEditor: FC<NodeEditorProps> = ({ node, depth, onChange }) => {
       <ConditionEditor
         node={node.condition}
         depth={depth}
-        onChange={(nextCondition) => onChange({ condition: nextCondition })}
+        onChange={(nextCondition) => onChange({ terminal: null, condition: nextCondition })}
         onDelete={() => onChange(null)}
       />
     );
@@ -349,7 +360,7 @@ const NodeEditor: FC<NodeEditorProps> = ({ node, depth, onChange }) => {
     return (
       <TerminalEditor
         node={node.terminal}
-        onChange={(nextTerminal) => onChange({ terminal: nextTerminal })}
+        onChange={(nextTerminal) => onChange({ terminal: nextTerminal, condition: null })}
         onDelete={() => onChange(null)}
       />
     );
@@ -361,6 +372,11 @@ const NodeEditor: FC<NodeEditorProps> = ({ node, depth, onChange }) => {
 const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDelete }) => {
   const metricType = getMetricType(node.metric);
   const boundStep = getBoundStep(metricType);
+  const [focusedBoundKey, setFocusedBoundKey] = useState<string | null>(null);
+  const [boundDraftValues, setBoundDraftValues] = useState<Record<string, string>>({});
+
+  const getBoundKey = (branchIndex: number, bound: 'lower' | 'upper'): string =>
+    `${branchIndex}-${bound}`;
 
   const updateBranch = (branchIndex: number, nextBranch: BranchNode): void => {
     onChange({
@@ -378,14 +394,8 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
       type: nextMetricType,
       branches: node.branches.map((branch) => ({
         ...branch,
-        lower:
-          branch.lower === null || branch.lower === undefined
-            ? null
-            : normaliseBoundValue(branch.lower, nextMetricType),
-        upper:
-          branch.upper === null || branch.upper === undefined
-            ? null
-            : normaliseBoundValue(branch.upper, nextMetricType),
+        lower: branch.lower === null ? null : normaliseBoundValue(branch.lower, nextMetricType),
+        upper: branch.upper === null ? null : normaliseBoundValue(branch.upper, nextMetricType),
       })),
     });
   };
@@ -410,10 +420,66 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
     rawValue: string,
   ): void => {
     const branch = node.branches[branchIndex]!;
+    const boundKey = getBoundKey(branchIndex, bound);
+
+    setBoundDraftValues((current) => ({
+      ...current,
+      [boundKey]: rawValue,
+    }));
+
     updateBranch(branchIndex, {
       ...branch,
-      [bound]: parseNumberInputValue(rawValue, metricType),
+      [bound]:
+        metricType === 'decimal'
+          ? parseRawBoundInputValue(rawValue, metricType)
+          : parseNumberInputValue(rawValue, metricType),
     });
+  };
+
+  const handleBoundFocus = (branchIndex: number, bound: 'lower' | 'upper'): void => {
+    const boundKey = getBoundKey(branchIndex, bound);
+    const branch = node.branches[branchIndex]!;
+    const value = branch[bound];
+
+    setFocusedBoundKey(boundKey);
+    setBoundDraftValues((current) => ({
+      ...current,
+      [boundKey]: formatBoundInputValue(value, metricType),
+    }));
+  };
+
+  const handleBoundBlur = (branchIndex: number, bound: 'lower' | 'upper'): void => {
+    const boundKey = getBoundKey(branchIndex, bound);
+    const branch = node.branches[branchIndex]!;
+    const draftValue = boundDraftValues[boundKey] ?? null;
+    const value = draftValue === null ? branch[bound] : parseNumberInputValue(draftValue, metricType);
+
+    if (value !== branch[bound]) {
+      updateBranch(branchIndex, {
+        ...branch,
+        [bound]: value,
+      });
+    }
+
+    setFocusedBoundKey((current) => (current === boundKey ? null : current));
+    setBoundDraftValues((current) => ({
+      ...current,
+      [boundKey]: formatBoundInputValue(value, metricType),
+    }));
+  };
+
+  const getDisplayedBoundValue = (
+    branchIndex: number,
+    bound: 'lower' | 'upper',
+    value: number | null,
+  ): string => {
+    const boundKey = getBoundKey(branchIndex, bound);
+
+    if (focusedBoundKey === boundKey) {
+      return boundDraftValues[boundKey] ?? formatBoundInputValue(value, metricType);
+    }
+
+    return formatBoundInputValue(value, metricType);
   };
 
   const handleAddBranch = (): void => {
@@ -462,8 +528,8 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
       </div>
 
       {node.branches.map((branch, branchIndex) => {
-        const lowerUnbounded = branch.lower === null || branch.lower === undefined;
-        const upperUnbounded = branch.upper === null || branch.upper === undefined;
+        const lowerUnbounded = branch.lower === null;
+        const upperUnbounded = branch.upper === null;
         const branchLabel = 'If';
 
         return (
@@ -495,10 +561,12 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
                 <input
                   type="number"
                   className="condition-node-number-input condition-node-interval-input"
-                  value={branch.lower ?? ''}
+                  value={getDisplayedBoundValue(branchIndex, 'lower', branch.lower)}
                   disabled={lowerUnbounded}
                   min={0}
                   step={boundStep}
+                  onFocus={() => handleBoundFocus(branchIndex, 'lower')}
+                  onBlur={() => handleBoundBlur(branchIndex, 'lower')}
                   onChange={(event) =>
                     handleBoundValueChange(branchIndex, 'lower', event.target.value)
                   }
@@ -509,10 +577,12 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
                 <input
                   type="number"
                   className="condition-node-number-input condition-node-interval-input"
-                  value={branch.upper ?? ''}
+                  value={getDisplayedBoundValue(branchIndex, 'upper', branch.upper)}
                   disabled={upperUnbounded}
                   min={0}
                   step={boundStep}
+                  onFocus={() => handleBoundFocus(branchIndex, 'upper')}
+                  onBlur={() => handleBoundBlur(branchIndex, 'upper')}
                   onChange={(event) =>
                     handleBoundValueChange(branchIndex, 'upper', event.target.value)
                   }
@@ -536,7 +606,7 @@ const ConditionEditor: FC<ConditionEditorProps> = ({ node, depth, onChange, onDe
               />
             </div>
             <NodeEditor
-              node={branch.node ?? null}
+              node={branch.node}
               depth={depth + 1}
               onChange={(nextNode) =>
                 updateBranch(branchIndex, {

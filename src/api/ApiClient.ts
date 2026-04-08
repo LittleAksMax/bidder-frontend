@@ -61,7 +61,10 @@ const normaliseConvertNodeOperators = (node: unknown): ConvertNode | null => {
   }
 
   const candidate = node as Record<string, unknown>;
-  const nextNode: ConvertNode = {};
+  const nextNode: ConvertNode = {
+    terminal: null,
+    condition: null,
+  };
 
   if (
     candidate.terminal &&
@@ -130,16 +133,17 @@ const normaliseConvertNodeOperators = (node: unknown): ConvertNode | null => {
       return null;
     }
 
-    const resolvedBranches = normalisedBranches.filter(
-      (branch): branch is NonNullable<(typeof normalisedBranches)[number]> => branch !== null,
-    );
+    const resolvedBranches = normalisedBranches as Array<{
+      lower: number | null;
+      upper: number | null;
+      node: ConvertNode;
+    }>;
 
+    const rawDefaultNode = condition.default ?? null;
     const defaultNode =
-      condition.default === null || condition.default === undefined
-        ? null
-        : normaliseConvertNodeOperators(condition.default);
+      rawDefaultNode === null ? null : normaliseConvertNodeOperators(rawDefaultNode);
 
-    if (condition.default !== null && condition.default !== undefined && !defaultNode) {
+    if (rawDefaultNode !== null && !defaultNode) {
       return null;
     }
 
@@ -563,7 +567,11 @@ class ApiClient {
     };
   }
 
-  async createPolicy(name: string, marketplace: string, script: string): Promise<Policy | null> {
+  async createPolicy(
+    name: string,
+    marketplace: string,
+    script: string,
+  ): Promise<ConvertResponse<Policy>> {
     const [succ, data, err] = await createApiRequest({
       method: 'POST',
       endpoint: '/policies',
@@ -576,14 +584,20 @@ class ApiClient {
     });
 
     if (err || !succ || !data) {
-      return null;
+      return {
+        result: null,
+        errorMessage: err?.message ?? 'Unable to create the policy.',
+      };
     }
 
     const realPolicy = mapPolicy(data);
 
     this.clearPolicyCache();
 
-    return realPolicy;
+    return {
+      result: realPolicy,
+      errorMessage: null,
+    };
   }
 
   async getPolicyByID(policyID: string): Promise<Policy | null> {

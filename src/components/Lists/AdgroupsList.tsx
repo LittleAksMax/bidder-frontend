@@ -7,6 +7,7 @@ import PolicyPill from '../Policies/PolicyPill';
 import CreateButton from '../buttons/CreateButton';
 import EditButton from '../buttons/EditButton';
 import DeleteButton from '../buttons/DeleteButton';
+import ViewButton from '../buttons/ViewButton';
 import './CampaignsList.css';
 
 interface AdgroupsListProps {
@@ -41,16 +42,7 @@ const AdgroupsList: FC<AdgroupsListProps> = ({
           <CampaignsListItem key={adgroup.id}>
             <div className="d-flex align-items-center adgroup-row">
               <div className="adgroup-name-section">
-                <button
-                  type="button"
-                  className="changelog-name-btn adgroup-name-button"
-                  onClick={() => onViewChangeLog(adgroup)}
-                  disabled={!canViewChangeLog}
-                  aria-label={`View change log for ad group ${adgroup.name}`}
-                  title={`View change log for ad group ${adgroup.name}`}
-                >
-                  {adgroup.name}
-                </button>
+                <span className="adgroup-name-button">{adgroup.name}</span>
               </div>
               <div className="adgroup-bid-section">
                 <code className="adgroup-bid-value">{adgroup.defaultBid.toFixed(2)}</code>
@@ -87,6 +79,7 @@ const AdgroupsList: FC<AdgroupsListProps> = ({
                 ) : (
                   <CreateButton onClick={() => onAttachPolicy(adgroup.id)} />
                 )}
+                <ViewButton onClick={() => onViewChangeLog(adgroup)} disabled={!canViewChangeLog} />
               </div>
             </div>
           </CampaignsListItem>

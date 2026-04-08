@@ -6,11 +6,7 @@ import HomeToolbar from '../components/Home/HomeToolbar';
 import Page from './Page';
 import { apiClient } from '../api/ApiClient';
 import { ProfileGroup } from '../api/profile.types';
-
-const STORAGE_KEYS = {
-  sellerId: 'home.selectedSellerId',
-  marketplace: 'home.selectedMarketplace',
-};
+import { STORAGE_KEYS } from '../storageKeys';
 
 const Home: FC = () => {
   const navigate = useNavigate();

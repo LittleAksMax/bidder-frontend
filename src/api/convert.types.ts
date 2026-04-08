@@ -20,13 +20,13 @@ export type TerminalNode = {
 };
 
 export type Node = {
-  terminal?: TerminalNode | null;
-  condition?: ConditionNode | null;
+  terminal: TerminalNode | null;
+  condition: ConditionNode | null;
 };
 
 export type BranchNode = {
-  lower?: number | null;
-  upper?: number | null;
+  lower: number | null;
+  upper: number | null;
   node: Node;
 };
 
@@ -34,7 +34,7 @@ export type ConditionNode = {
   metric: Metric;
   type: MetricType;
   branches: BranchNode[];
-  default?: Node | null;
+  default: Node | null;
 };
 
 export type ConvertScriptToTreeRequest = {
