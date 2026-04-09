@@ -181,3 +181,14 @@
   flex: 1;
   overflow-y: auto;
 }
+
+.delete-confirmation-dialog .modal-content {
+  min-height: auto;
+  height: auto;
+  max-height: none;
+}
+
+.delete-confirmation-dialog .modal-body {
+  flex: 0 0 auto;
+  overflow-y: visible;
+}

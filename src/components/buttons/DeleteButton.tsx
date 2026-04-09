@@ -56,6 +56,7 @@ const DeleteButton: FC<DeleteButtonProps> = ({
         onHide={() => setShowConfirmation(false)}
         centered
         backdrop="static"
+        dialogClassName="delete-confirmation-dialog"
       >
         <Modal.Header closeButton={!isSubmitting}>
           <Modal.Title>{confirmation.title}</Modal.Title>
